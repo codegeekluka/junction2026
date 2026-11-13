@@ -2,7 +2,7 @@
 
 > Shared context for our team. Everyone (and every teammate's Claude / AI assistant) should read this first.
 > Claude Code loads this file automatically when it's opened in this folder.
-> Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`.
+> **Game plan, roles and timeline: `PLAN.md`.** Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`.
 
 ## The event
 - **Junction 2026**, Hype Areena, Espoo · Fri 13.11 16:00 → Sun 15.11 18:00 · team size 1–4 · €100k total prizes
