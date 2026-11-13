@@ -1,0 +1,16 @@
+# Secrets — never commit API keys
+.env
+.env.*
+!.env.example
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Common build/deps
+node_modules/
+__pycache__/
+.venv/
+dist/
+build/
+.DS_Store
+Thumbs.db
