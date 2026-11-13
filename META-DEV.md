@@ -33,10 +33,29 @@ Links from the Junction Discord (Meta team). Docs read 2026-11-13. Both framewor
 1. Pair the glasses with the **Meta AI app** and update the app and glasses firmware.
 2. Turn on **Developer Mode**: Meta AI app → Settings → App Info → tap the version number 5× → toggle on.
 3. Add the SDK:
-   - **iOS:** Swift Package `https://github.com/facebook/meta-wearables-dat-ios`
+   - **iOS:** Swift Package `https://github.com/meta/meta-wearables-dat-ios` (the old `facebook/` URL redirects here)
    - **Android:** Maven `com.meta.wearable:mwdat-core`, `mwdat-camera` and the other modules (v1.0.1)
 4. Until you have glasses, develop against the **mock device**.
 5. Opt out of Meta analytics in the app config if you want (see the repo READMEs). This also helps our privacy story.
+
+## Developer Center account flow
+From https://wearables.developer.meta.com/, needed before the app can use the camera:
+1. **Account and organization:** one person creates **one organization for the team** and invites the others. [Guide](https://wearables.developer.meta.com/docs/develop/dat/onboarding-and-organization-management)
+2. **Developer Mode** (see the checklist above).
+3. **Register the project** and request permissions for device features such as the camera. [Guide](https://wearables.developer.meta.com/docs/develop/dat/manage-projects/)
+4. **Share with test users** through versions and release channels. Probably not needed for the demo. [Guide](https://wearables.developer.meta.com/docs/develop/dat/set-up-release-channels)
+
+Also useful: [DAT docs](https://wearables.developer.meta.com/docs/develop/dat) · [API reference](https://wearables.developer.meta.com/docs/reference/) · [Support](https://wearables.developer.meta.com/support/). The Wearables Developer Terms and Acceptable Use Policy (linked in the site footer) matter for our consent and privacy story.
+
+## Common problems when checking out the hardware
+*From Tony (Meta) on the Junction Discord, Fri 13.11 20:23.*
+
+| Problem | Fix | Glasses | Meta Neural Band |
+|---|---|---|---|
+| Device is registered to another account | Factory reset it | [Reset guide](https://www.meta.com/en-gb/help/ai-glasses/814846737027479/) | [Reset guide](https://www.meta.com/en-gb/help/ai-glasses/1481163499576351/) |
+| Device won't pair | Follow the pairing guide | [Pairing guide](https://www.meta.com/en-gb/help/ai-glasses/852077233025627/) | [Pairing guide](https://www.meta.com/en-gb/help/ai-glasses/770840295349358/) |
+
+Every loan starts on someone else's setup, so expect to reset, pair and re-register our app each time. Shared glasses hold only one unpublished app (`challenge-briefs.md` §5). Budget about 15 minutes of each loan for this.
 
 ## Setup checklist (Display web app, if used)
 1. Install the Chrome simulator and build to the 600×600 view: dark background, high contrast, ≥20px main text, everything keyboard-focusable.
@@ -50,7 +69,13 @@ Links from the Junction Discord (Meta team). Docs read 2026-11-13. Both framewor
 - Or add the MCP server `https://mcp.developer.meta.com/wearables` for live docs.
 - The DAT getting-started page mentions a DAT plugin for AI coding tools too.
 
+## Help and community
+- GitHub Discussions: [iOS](https://github.com/meta/meta-wearables-dat-ios/discussions) · [Android](https://github.com/meta/meta-wearables-dat-android/discussions) · [Web Apps](https://github.com/meta/meta-wearables-webapp/discussions)
+- Reddit: https://www.reddit.com/r/MetaGlassesforDevs
+- Meta booth contacts: Amanda Le (main), Dennis Punjabi (iOS)
+
 ## Ask the Meta booth
+*Note: according to the participant guide, glasses are lent from the **Hardware Lab desk (5th floor)**, not the booth. Request at https://2026.hackjunction.com/hardware. Loans are 2 h (Display) or 4 h (Gen 2), not the weekend. Details: `challenge-briefs.md`.*
 - Can we borrow glasses for the weekend? Which model: Display or Ray-Ban Meta?
 - Does Developer Mode work on the loan glasses, and what firmware are they on?
 - Any DAT sample app for camera streaming we can start from?

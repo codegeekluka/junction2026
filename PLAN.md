@@ -5,34 +5,37 @@ Team: 2 tech (EE/AI · data science/HVAC) + 2 design (architect · designer). Go
 ## 1. The challenge, in one screen
 **Meta — AI Glasses for Everyone, Everyday.** Build the best *everyday* use case where the glasses' **first-person view** makes an interaction new or better. Mirroring a phone screen doesn't count.
 
-**What they judge (design for each of these):**
+**What they judge (25% each, design for every one):**
 | Criterion | What it means for us |
 |---|---|
-| Creativity | An original use case with an obvious "why on your face, not in your hand" |
+| Creativity and use case | An original use case with an obvious "why on your face, not in your hand" |
 | Technical execution | A functional prototype that handles **permissions, errors, performance trade-offs, connectivity loss and device state changes** (glasses disconnect, battery, mic busy). Show these in the demo. |
-| Real-world impact | A clear audience and a **plausible path to a pilot** (who would deploy it first?) |
-| Inclusive interaction design | Works for **people of all abilities**, with consent and safe data handling |
+| Real-world value and feasibility | A clear audience and a **plausible path to a pilot** (who would deploy it first?) |
+| User experience: input, accessibility and trust | Works for **people of all abilities**, with clear input, consent and safe data handling |
 
 - Audio-first and display experiences count equally, so **we don't need a display**.
-- Web apps and Device Access Toolkit mobile integrations are both accepted.
+- **Only the Device Access Toolkit can use the glasses' camera or mic.** Web apps run only on Ray-Ban Display and can't see or hear, so our product must be a native iOS/Android toolkit app. Full details: `challenge-briefs.md`.
+- Prize is best overall only. The best teams may be invited to Meta's AI forum on Wed 18.11.
 - **Deliverables:** a clear problem and audience, a functional prototype, and a deck.
 
-**Gemini — Best Use of Gemini API** (€4,000 + $1k GCP credits/member for 1st; €2k; €1k). Judges want a meaningful, innovative, technically impressive use, and **why Gemini matters**. Make live multimodal understanding (seeing and hearing in real time) the visible core of the demo.
+**Gemini — Best Use of Gemini API** (€4,000 + $1k GCP credits/member for 1st; €2k; €1k). Judges want a meaningful, innovative, technically impressive use, and **why Gemini matters**. Make live multimodal understanding (seeing and hearing in real time) the visible core of the demo. The submission must answer: the problem, how Gemini is integrated, what's innovative, and why Gemini matters. Credits: one person per team fills in https://forms.gle/bByXvjGkW9WZuYwW9 (Google account users must be 18+).
 
 **Optional add-ons:**
-- **ElevenLabs:** only if we want a custom or expressive voice. Gemini Live can already speak, so we may not need it.
+- **ElevenLabs:** only if we want a custom or expressive voice. Gemini Live can already speak, so we may not need it. If used, claim the code at https://mlh.link/junction-26.
 - **Aiven:** only if we need a database.
 
 Don't add anything else.
 
-## 2. The 7 things everyone must know
-1. **Tonight 23:59:** draft project on the platform with our challenges (Meta + Gemini, plus ElevenLabs if used). We can change them later.
+## 2. The 9 things everyone must know
+1. **Tonight 23:59:** create the team on the platform (none exists yet), the others join by code, then the draft project with our challenges (Meta + Gemini, plus ElevenLabs if used). We can change them later.
 2. **Sun 10:00:** FINAL submission. Switch it from DRAFT to FINAL. No late entries.
 3. **Video max 2:00**, strictly enforced. Also needed: a deck PDF, demo and repo links, and phone numbers.
-4. **Sun 10:30–14:00 peer review:** all 4 must be there, or we lose the main prize. Other hackers vote, so we need a 60-second demo anyone gets instantly.
+4. **Sun 10:30–14:00 peer review:** all 4 must be there, or we lose the main prize. Other hackers vote, so we need a 60-second demo anyone gets instantly. (One schedule says it ends at 13:00; plan for 14:00.)
 5. The top 5 pitch for **3 min + 3 min Q&A**. The mic is cut at 3:00.
 6. **Privacy is part of the judging.** Camera glasses raise bystander concerns, so show consent and that we don't store video.
 7. **Sleeping at the venue isn't allowed.** Plan who goes home when.
+8. **Glasses come from the Hardware Lab desk (5th floor), not the Meta booth.** Request at https://2026.hackjunction.com/hardware: one request per team, it doesn't reserve stock, photo ID kept as a deposit. Loans are 2 h (Ray-Ban Display) or 4 h (Gen 2), and demand is far above stock. Plan our glasses time in short, booked blocks.
+9. **No code written before the event.** Submissions are MIT-licensed and the source must be accessible.
 
 ## 3. Use case: decide by 22:30 tonight
 Test each idea:
@@ -53,24 +56,30 @@ Ray-Ban Meta glasses ──(camera frames + mic via Meta Wearables Device Access
 phone app ──(streaming audio + video frames)──▶ Gemini Live API ──(spoken reply)──▶ glasses speakers
                                     └─ tool calls (e.g. "describe_sign", "find_route", "remember_place")
 ```
-- **Plan A:** native phone app using Meta's Device Access Toolkit for camera and audio, streaming to the Gemini Live API.
-- **Plan B (build it first, tonight):** a phone web app using the **phone camera** mounted at eye level, streaming to Gemini Live. This keeps the whole pipeline working even if the glasses or toolkit are late, and switching to glasses later is just changing the input.
+- **Plan A (the only way to use the glasses):** native iOS or Android app using Meta's Device Access Toolkit for camera and audio, streaming to the Gemini Live API. A web app can't reach the glasses' camera or mic.
+  - Toolkit is a developer preview: iOS 17.2+ and Xcode 26.4+ (Swift Package), or Android 10+ (Maven `com.meta.wearable`). Pick one platform tonight.
+  - Turn on Developer Mode in the Meta AI app and register an application ID in the Wearables Developer Center. Start from the CameraAccess sample.
+  - Use the **Mock Device Kit** to build and test without glasses, so loan time is spent only on testing on the real device.
+  - Shared glasses hold only one unpublished app: **re-register ours at the start of every loan.**
+- **Plan B (build it first, tonight):** the same pipeline using the **phone camera** mounted at eye level. This keeps the demo working even if we can't get glasses, and switching to glasses later is just changing the input.
 - Keep secrets in `.env`, each person with their own API key.
+- **Gemini Live limits (must handle):** audio+video sessions **stop after 2 minutes** unless `contextWindowCompression` is turned on. Also turn on **session resumption** (handles last 2 hours) so a dropped connection resumes. Video input is at most 1 frame per second. Model: `gemini-3.8-live`.
 - **Latency is the risk.** Send low-resolution frames at about 1 fps and only push detail when asked.
 
 ## 5. Roles
 | Person | Owns | Tonight |
 |---|---|---|
 | **Tech 1 (EE/AI)** | Gemini Live pipeline, prompts, tool calls, latency | Get a Gemini API key and a "see and talk" demo working on a phone camera (Plan B) |
-| **Tech 2 (data/HVAC)** | Glasses integration (Device Access Toolkit), app shell, error and state handling, test logging | Meta booth: get glasses and toolkit access, run Meta's sample app |
+| **Tech 2 (data/HVAC)** | Glasses integration (Device Access Toolkit), app shell, error and state handling, test logging | Request glasses at the Hardware Lab (5th floor). Set up the toolkit with the Mock Device Kit and run Meta's CameraAccess sample. Ask the Meta booth (Amanda Le; Dennis Punjabi for iOS) for help. |
 | **Designer 1 (architect)** | Use-case logic (spaces, routes, signage), demo scenario and route at the venue, deck visuals | Write the user scenario and pick 3 demo spots in the venue |
 | **Designer 2** | Voice and interaction design: what it says, when, how it fails gracefully, consent, accessibility. Also the **2-min video**. | Persona, conversation script, consent and onboarding flow |
 
 ## 6. Timeline
 **Friday (now → ~01:00)**
-- [ ] Meta booth: glasses available? Device Access Toolkit sample app? Is a web-app route possible? *(Tech 2, now)*
+- [ ] Request glasses at https://2026.hackjunction.com/hardware, pick iOS or Android, get the Mock Device Kit and CameraAccess sample running *(Tech 2, now)*
+- [ ] Gemini credits form (one person) and ElevenLabs code if used *(Tech 1, now)*
 - [ ] Use case decided *(all, 22:30)*
-- [ ] Draft submission on the platform *(before 23:59)*
+- [ ] Create the team on the platform, everyone joins, then the draft submission *(before 23:59)*
 - [ ] Plan B pipeline: phone camera → Gemini Live → voice reply *(Tech 1)*
 - [ ] Persona, scenario, script v1 *(designers)*
 - [ ] Go home and sleep. Saturday is the real build day.

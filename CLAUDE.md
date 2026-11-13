@@ -2,7 +2,7 @@
 
 > Shared context for our team. Everyone (and every teammate's Claude / AI assistant) should read this first.
 > Claude Code loads this file automatically when it's opened in this folder.
-> **Game plan, roles and timeline: `PLAN.md`.** Meta glasses dev setup (DAT vs Web Apps): `META-DEV.md`. Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`.
+> **Game plan, roles and timeline: `PLAN.md`.** Meta glasses dev setup (DAT vs Web Apps, links, hardware troubleshooting): `META-DEV.md`. Full briefs (Meta, Gemini, ElevenLabs, Aiven), participant guide and SDK setup notes: `challenge-briefs.md`. Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`.
 
 ## The event
 - **Junction 2026**, Hype Areena, Espoo · Fri 13.11 16:00 → Sun 15.11 18:00 · team size 1–4 · €100k total prizes
@@ -15,7 +15,7 @@
 | **Fri 23:59** | Draft submission on the platform listing our challenges (can still change later) | One member creates the project |
 | Sat 12:00 | Submissions open | |
 | **Sun 10:00** | **FINAL** submission. Switch it from DRAFT to FINAL. No late entries. | |
-| Sun 10:30–14:00 | Live peer review. **Everyone must be at the venue**, or we're out of the main prize. | All |
+| Sun 10:30–14:00 | Live peer review. **Everyone must be at the venue**, or we're out of the main prize. (The guide's schedule says it ends at 13:00, elsewhere 14:00. Plan for 14:00.) | All |
 | Sun 14:15 | Top 5 pitch (3 min + 3 min Q&A) for the €10,000 main prize | |
 | Sun 15:10 | Challenge winners announced | |
 
@@ -25,6 +25,8 @@
 - a **video of max 2:00** (strictly enforced)
 - demo and source code links, plus a pitch deck PDF
 - team phone numbers and Discord names
+
+**Rules:** no code written before the event. All submissions are MIT-licensed, and the organizers must be able to access the source code.
 
 ## Our decision: Meta glasses + a small set of tech challenges
 We are **not** spreading thin: one product, one main challenge, only tech challenges that are a natural part of it.
@@ -44,8 +46,12 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
 ### Meta brief (summary)
 - **Ask:** build the best *everyday* use case for Meta AI glasses, showing how a **first-person field of view** enables new or better interactions. It should go beyond mirroring a phone screen.
 - **Deliver:** a clearly stated problem and audience, a **functional prototype**, and a **deck**.
-- **Judged on:** creativity, technical execution, real-world impact, and **inclusive interaction design for people of all abilities**.
-- Display and **audio-first** experiences count equally. **Web apps** and **Device Access Toolkit** mobile integrations are both fine.
+- **Judged on, 25% each:** creativity and use case, technical execution, real-world value and feasibility, and **user experience: input, accessibility and trust**. The prize goes to the best overall entry only. The best teams may be invited to Meta's AI forum on Wed 18.11.
+- Display and **audio-first** experiences count equally.
+- **Only the Device Access Toolkit can use the glasses' camera or microphone.** Web apps run only on Ray-Ban Display, with a screen and text-to-speech but no camera or mic. Our product needs the camera, so it has to be a **native iOS/Android app using the toolkit**.
+- **Getting glasses:** from the **Hardware Lab desk on the 5th floor**, not the Meta booth. Request at https://2026.hackjunction.com/hardware (one request per team, it doesn't reserve stock, photo ID kept as a deposit). Loans: 2 hours for Ray-Ban Display, 4 hours for Gen 2. Demand is far higher than stock.
+- **Meta booth** is for developer help: Amanda Le (main contact), Dennis Punjabi (iOS).
+- **Toolkit setup:** developer preview. iOS 17.2+ and Xcode 26.4+ (Swift Package), or Android 10+ (Maven `com.meta.wearable`). Turn on Developer Mode in the Meta AI app and register an application ID in the Wearables Developer Center. Use the Mock Device Kit to build without glasses. Shared glasses hold only one unpublished app, so re-register ours at the start of every loan.
 - **Strong entries show:**
   - an original, relevant use case with a clear benefit from wearing it
   - a focused, plausible path to adoption or a pilot
@@ -55,9 +61,13 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
 ### Gemini brief (summary)
 - Open challenge: a meaningful, innovative, technically impressive use of the Gemini API.
 - We must **show why Gemini matters** to the solution. Make it the visible core, e.g. live multimodal understanding of what the wearer sees.
+- The submission must answer four things: the problem, how Gemini is integrated, what's innovative, and why Gemini matters.
+- **Credits:** one person per team fills in https://forms.gle/bByXvjGkW9WZuYwW9. Everyone using the Google accounts must be 18+.
+- **Gemini Live limits:** audio+video sessions stop after **2 minutes** unless `contextWindowCompression` is on. Also turn on session resumption to survive reconnects. Video input is at most 1 frame per second. Model: `gemini-3.8-live`.
 
 ### ElevenLabs brief (summary)
 - Use ElevenLabs for natural, expressive voice in the project.
+- Claim the code at https://mlh.link/junction-26.
 
 ## Use-case direction (to confirm as a team)
 Our edge: an **architect** and a **designer** (spaces, inclusive design, pitch), an **EE/AI builder** (Gemini pipeline, glasses integration), and a **data scientist who runs an HVAC business** (real users, domain knowledge, connections).
@@ -74,9 +84,12 @@ Our edge: an **architect** and a **designer** (spaces, inclusive design, pitch),
 | Designer | Inclusive interaction design (voice flows, errors, consent), deck, **2-min video** |
 
 ## Open questions / to-do
-- [ ] Meta booth: can we get glasses or the Device Access Toolkit? Does the web-app route work without hardware?
+- [ ] Request glasses at https://2026.hackjunction.com/hardware now (5th-floor Hardware Lab desk, bring photo ID)
+- [ ] Pick iOS or Android for the toolkit app, and get the Mock Device Kit running until glasses arrive
 - [ ] Pick the use case and write the one-line punchline
-- [ ] Create the draft project on the platform with Meta + Gemini + ElevenLabs **before Fri 23:59**
+- [ ] **Create the team on the platform** (no team exists yet), have the others join by code, then create the draft project with Meta + Gemini + ElevenLabs **before Fri 23:59**
+- [ ] Gemini credits form (one person per team): https://forms.gle/bByXvjGkW9WZuYwW9
+- [ ] ElevenLabs code: https://mlh.link/junction-26
 - [ ] Get Gemini and ElevenLabs API keys (each person their own; never commit keys to the repo)
 - [ ] Join the Discord channels for Meta, Gemini and ElevenLabs
 - [ ] Sat evening: feature freeze. Sun morning: video and deck.
