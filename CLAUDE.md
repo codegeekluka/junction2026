@@ -59,17 +59,31 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
   - consent and safe data practices
 
 ### Gemini brief (summary)
-- Open challenge: a meaningful, innovative, technically impressive use of the Gemini API.
-- We must **show why Gemini matters** to the solution. Make it the visible core, e.g. live multimodal understanding of what the wearer sees.
-- The submission must answer four things: the problem, how Gemini is integrated, what's innovative, and why Gemini matters.
-- **Credits:** one person per team fills in https://forms.gle/bByXvjGkW9WZuYwW9. Everyone using the Google accounts must be 18+.
-- **Gemini Live limits:** audio+video sessions stop after **2 minutes** unless `contextWindowCompression` is on. Also turn on session resumption to survive reconnects. Video input is at most 1 frame per second. Model: `gemini-3.8-live`.
+- Open challenge: a meaningful, innovative, technically impressive use of the Gemini API. Any industry or idea.
+- They want more than "an LLM added to an app": Gemini should **enable something genuinely new** or make an existing solution much better.
+- The submission must clearly explain:
+  1. the problem and why it matters
+  2. how we integrated the Gemini API
+  3. what makes our use innovative or technically impressive
+  4. why Gemini is essential to the solution
+- Make Gemini the visible core, e.g. live multimodal understanding of what the wearer sees.
+- **Credits:** Google DeepMind gives Gemini API credits to up to 400 teams. One person per team fills in https://forms.gle/bByXvjGkW9WZuYwW9. Instructions for accessing the accounts come during the event, and keys are generated in Google AI Studio. **Accounts and participation are 18+ only.**
+- **Support:** Google DeepMind booth at the venue. There was a "Build with Google DeepMind" workshop on Friday.
+- **Gemini Live limits:** audio+video sessions stop after **2 minutes** unless `contextWindowCompression` is on. Also turn on session resumption to survive reconnects. Video input is at most 1 frame per second. Model: `gemini-3.8-live-preview` (model card: `gemini-3.8-live`).
 
 ### ElevenLabs brief (summary)
 - Use ElevenLabs for natural, expressive voice in the project.
 - Claim the code at https://mlh.link/junction-26.
 
-## Use-case direction (to confirm as a team)
+## ✅ DECIDED (Sat 14.11): hands-free repair coach, demo = fixing a sink
+- The story is about workers and handymen (1 in 10 people work with their hands) plus the 9 in 10 who lack the know-how. The story is still being refined by our designer.
+- Pipeline: **three Gemini models**:
+  - **Gemini Live:** the voice
+  - **Gemini Decision 1 / Decisions API:** the watcher, running continuous yes/no step checks
+  - **Gemini Robotics-ER 2:** the pointer, giving spatial locations
+- Full architecture and build steps: `PLAN.md` §3–4. The sections below are earlier brainstorming.
+
+## Use-case direction (earlier brainstorm, superseded)
 Our edge: an **architect** and a **designer** (spaces, inclusive design, pitch), an **EE/AI builder** (Gemini pipeline, glasses integration), and a **data scientist who runs an HVAC business** (real users, domain knowledge, connections).
 
 - **Lead idea:** *Accessible wayfinding for low-vision people.* The glasses read signs and find entrances, lifts and accessible routes inside unfamiliar buildings, then guide the wearer by voice. This fits "everyday", "inclusive" and "first-person view", and uses the architect's knowledge of buildings.
@@ -85,10 +99,10 @@ Our edge: an **architect** and a **designer** (spaces, inclusive design, pitch),
 
 ## Open questions / to-do
 - [ ] Request glasses at https://2026.hackjunction.com/hardware now (5th-floor Hardware Lab desk, bring photo ID)
-- [ ] Pick iOS or Android for the toolkit app, and get the Mock Device Kit running until glasses arrive
-- [ ] Pick the use case and write the one-line punchline
+- [x] Pick iOS or Android → **Android** (team is on Windows). Next: get the Mock Device Kit running until glasses arrive
+- [x] Pick the use case → sink-repair coach. [ ] Write the one-line punchline
 - [ ] **Create the team on the platform** (no team exists yet), have the others join by code, then create the draft project with Meta + Gemini + ElevenLabs **before Fri 23:59**
-- [ ] Gemini credits form (one person per team): https://forms.gle/bByXvjGkW9WZuYwW9
+- [ ] Gemini credits form (one person per team): https://forms.gle/bByXvjGkW9WZuYwW9. Check everyone is 18+
 - [ ] ElevenLabs code: https://mlh.link/junction-26
 - [ ] Get Gemini and ElevenLabs API keys (each person their own; never commit keys to the repo)
 - [ ] Join the Discord channels for Meta, Gemini and ElevenLabs

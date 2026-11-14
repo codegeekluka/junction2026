@@ -37,34 +37,76 @@ Don't add anything else.
 8. **Glasses come from the Hardware Lab desk (5th floor), not the Meta booth.** Request at https://2026.hackjunction.com/hardware: one request per team, it doesn't reserve stock, photo ID kept as a deposit. Loans are 2 h (Ray-Ban Display) or 4 h (Gen 2), and demand is far above stock. Plan our glasses time in short, booked blocks.
 9. **No code written before the event.** Submissions are MIT-licensed and the source must be accessible.
 
-## 3. Use case: decide by 22:30 tonight
-Test each idea:
-- Does the first-person view do something a phone can't?
-- Can we name one real person who needs it?
-- Can we demo it live in 60 seconds at the venue?
-- Is it inclusive?
+## 3. Use case: DECIDED (Sat 14.11)
+**A hands-free repair coach. The demo is fixing a sink (the P-trap under the basin).**
+- **Story (teammate owns it, still being refined):** about 1 in 10 people work with their hands. Pros meet an unfamiliar model on every job, and the other 9 in 10 don't have the know-how at all. The same engine serves both groups.
+- **Why glasses:** both hands are busy and wet under the sink. A phone can't be held or propped there.
+- **Why it's worth buying:** one fixed leak saves a €150+ call-out. Daily uses (cooking, assembly, bike) keep the glasses on your face.
+- **Pilot path:** our HVAC business. Customers try the fix themselves before a technician drives out. If it fails, the technician gets a handoff report.
 
-| Idea | Why it can win | Risk |
+## 4. Tech architecture: three Gemini models
+```
+Ray-Ban Meta glasses ──camera + mic (DAT)──▶ phone app ◀── speaker audio (+ snapshot on display)
+                                               │  (Plan B: browser page using the phone camera)
+                                               ▼
+                         Backend (API keys, tools, session state, repair plan)
+   ┌──────────────────────────┬───────────────┴────────────┬──────────────────────────────┐
+   ▼                          ▼                            ▼                              ▼
+Gemini Live               Gemini Decision 1           Gemini Robotics-ER 2          Google Search
+gemini-3.8-live-preview   gemini-decision-1           gemini-robotics-er-2-preview  grounding (via Live)
+THE VOICE                 THE WATCHER                 THE POINTER                   model no. → part/manual
+talks, can be interrupted yes/no checks on frames     "where's the slip nut?"
+calls tools               every 1–2 s, ~200 ms,       point/box + whether the step
+                          with a confidence score     is done (deep check)
+```
+**How they work together:** the watcher flags something → the pointer locates it if needed → the voice tells the user.
+- **Gemini Live:** audio in as 16kHz PCM, JPEG frames at ≤1 fps, audio out at 24kHz. Use ephemeral tokens or the backend relay so keys never reach the phone.
+- **Decision 1 (Decisions API, launched 11.11.2026):** closed-set questions (yes/no, multiple choice, or a score) answered with a probability and a confidence score. Up to 1,000 questions per request, $0.10 per 1M input tokens. Low confidence means ask the user, or call ER.
+- **Robotics-ER 2 (preview):** pointing, bounding boxes, and detecting whether a task succeeded. Runs on a sharp snapshot when Live calls it as a tool. Stretch goal: `gemini-robotics-er-2-streaming-preview`.
+
+**Tools that Live calls:**
+| Tool | Does | Model |
 |---|---|---|
-| ⭐ **Wayfinding for low-vision people:** reads signs and finds entrances, lifts, toilets and accessible routes in unfamiliar buildings, with voice guidance | Hits every Meta criterion. The architect brings real expertise on how buildings work. Easy to demo inside Hype Areena. | Navigation must be framed as *assistance*, not safety-critical |
-| **Home appliance helper:** look at your heat pump or boiler and ask "why is it blinking?" | Real HVAC domain knowledge and real customers. Clear pilot path through the HVAC business. | Less "everyone, everyday", and less inclusive by default |
-| *(propose your own and run the same test)* | | |
+| `identify_fixture` | Reads the brand/model, finds the part or manual | Live + Search |
+| `locate(part)` | Gives a point on the image → spoken directions / circled snapshot | Robotics-ER 2 |
+| `check_step(step)` | Says whether the step is done, with the reason | Decision 1 (Robotics-ER 2 if unsure) |
+| `safety_gate` | Blocks progress until a condition holds (water off, bucket in place) | Decision 1 |
+| `recall(step)` | Returns the keyframe from when that part came off | session memory |
+| `handoff_report` | Summary + photos + part number + steps tried | Gemini text model |
 
-## 4. Tech architecture (keep it simple)
-```
-Ray-Ban Meta glasses ──(camera frames + mic via Meta Wearables Device Access Toolkit)──▶ phone app
-phone app ──(streaming audio + video frames)──▶ Gemini Live API ──(spoken reply)──▶ glasses speakers
-                                    └─ tool calls (e.g. "describe_sign", "find_route", "remember_place")
-```
-- **Plan A (the only way to use the glasses):** native iOS or Android app using Meta's Device Access Toolkit for camera and audio, streaming to the Gemini Live API. A web app can't reach the glasses' camera or mic.
-  - Toolkit is a developer preview: iOS 17.2+ and Xcode 26.4+ (Swift Package), or Android 10+ (Maven `com.meta.wearable`). Pick one platform tonight.
-  - Turn on Developer Mode in the Meta AI app and register an application ID in the Wearables Developer Center. Start from the CameraAccess sample.
-  - Use the **Mock Device Kit** to build and test without glasses, so loan time is spent only on testing on the real device.
-  - Shared glasses hold only one unpublished app: **re-register ours at the start of every loan.**
-- **Plan B (build it first, tonight):** the same pipeline using the **phone camera** mounted at eye level. This keeps the demo working even if we can't get glasses, and switching to glasses later is just changing the input.
-- Keep secrets in `.env`, each person with their own API key.
-- **Gemini Live limits (must handle):** audio+video sessions **stop after 2 minutes** unless `contextWindowCompression` is turned on. Also turn on **session resumption** (handles last 2 hours) so a dropped connection resumes. Video input is at most 1 frame per second. Model: `gemini-3.8-live`.
-- **Latency is the risk.** Send low-resolution frames at about 1 fps and only push detail when asked.
+**Gemini Live limits (must handle):** audio+video sessions **stop after 2 minutes** unless `contextWindowCompression` is on. Also turn on **session resumption** so a dropped connection resumes. Video input is at most 1 frame per second.
+
+**Glasses app (Device Access Toolkit) notes:**
+- It's the only way to use the glasses' camera and mic; a web app can't reach them. Android 10+ (Maven `com.meta.wearable`).
+- Turn on Developer Mode in the Meta AI app and register an application ID in the Wearables Developer Center. Start from the CameraAccess sample.
+- Use the **Mock Device Kit** to build and test without glasses, so loan time is spent only on testing on the real device.
+- Shared glasses hold only one unpublished app: **re-register ours at the start of every loan.**
+
+**Watcher loop (backend, independent of Live):** every 1–2 s, send the latest frame plus the questions for the current step (including "too dark/blurry?") to Decision 1. A confident "wrong" result makes Live interrupt the user ("stop, flip that washer").
+
+**Robustness the Meta judges want to see (demo at least one):**
+- **Glasses disconnect:** fall back to the phone camera and keep the current step.
+- **Network drop:** resume the session and keep the step state.
+- **Dark or blurry frame:** ask the user to move closer or add light.
+- **Consent:** ask for consent at start, and only run when activated.
+- **Data:** no video is stored. Keep one keyframe per step, deleted at the end of the session.
+
+**Stack (proposal):** a Node.js backend (WebSocket relay + tools) using the `@google/genai` SDK, a plain web client for Plan B, and a DAT app on **Android (Kotlin)**, decided because the whole team is on Windows and iOS needs a Mac with Xcode. We need an Android phone for the demo. Secrets go in `.env`.
+
+### Build steps (work top to bottom; ✅ = demo-able checkpoint)
+| # | Step | Depends on | Parallel? |
+|---|---|---|---|
+| 0 | Gemini API key + credits form. Probe scripts: send 3–5 photos of the real sink to Decision 1 and Robotics-ER 2. Measure latency and accuracy. | — | **A** |
+| 1 | Backend skeleton: WebSocket relay to Gemini Live, `.env`, health check | 0 (key) | **B** |
+| 2 | Web client: phone camera + mic → backend → voice reply ✅ *core loop* | 1 | B |
+| 3 | Repair plan (P-trap steps as JSON: checks, safety gates, phrasing) | — | **C** (designer + AI) |
+| 4 | Tools in Live: `check_step`, `safety_gate`, `locate` (wired to 0's modules) | 2, 3 | B |
+| 5 | Watcher loop + proactive interrupt ✅ *"stop, flip the washer"* | 4 | B |
+| 6 | Keyframe memory + `recall` + `handoff_report` | 4 | B |
+| 7 | Android DAT app: glasses camera/mic → same backend (mock device first) ✅ *on glasses* | 1 | **D** |
+| 8 | Robustness: disconnect fallback, network resume, dark/blurry, consent screen | 5, 7 | B + D |
+| 9 | Demo set: a real sink/trap at the venue, rehearse the 60-second flow, film | 5 | design |
+| — | **Feature freeze 22:00** | | |
 
 ## 5. Roles
 | Person | Owns | Tonight |
