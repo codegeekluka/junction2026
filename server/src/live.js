@@ -24,6 +24,11 @@ const TOOL_DECLARATIONS = [
     parameters: { type: 'OBJECT', properties: {} },
   },
   {
+    name: 'verify_now',
+    description: 'The user says they finished the current step, or asks "is it right?". Triggers an immediate close check by the camera inspector. The result arrives as an [INSPECTOR] message; until then, say you are checking.',
+    parameters: { type: 'OBJECT', properties: {} },
+  },
+  {
     name: 'skip_step',
     description: 'Skip the current step ONLY if the user explicitly asks to skip it. Safety steps cannot be skipped.',
     parameters: { type: 'OBJECT', properties: {} },
@@ -35,7 +40,9 @@ const TOOL_DECLARATIONS = [
   },
 ];
 
-const isFatal = (err) => /quota|billing|API key|permission|not found|unauthenticated/i.test(String(err?.message || err));
+const LIVE_FRAME_GAP_MS = Number(process.env.LIVE_FRAME_GAP_MS || 4000);
+
+const isFatal = (err) => /quota|billing|API key|permission|not found|unauthenticated|not supported|invalid/i.test(String(err?.message || err));
 
 export class CoachSession {
   /** @param {(msg: object) => void} send  sends a JSON message to the client */
@@ -51,6 +58,11 @@ export class CoachSession {
     this.speaking = false;     // coach is mid-utterance
     this.pendingNote = null;   // non-urgent inspector note waiting for the coach to finish
     this.lastFrameAt = 0;
+    this.forceFrame = false;   // pass the next frame to Live immediately (user just started talking)
+    this.lastHeardAt = 0;
+    this.framesToLive = 0;
+    /** Called when the user starts speaking (after a pause): orchestrator grabs a fresh frame. */
+    this.onUserSpeech = () => {};
     /** Tool handler set by the orchestrator: async (name, args) => result object */
     this.onTool = async (name) => ({ error: `tool ${name} not available` });
   }
@@ -79,6 +91,9 @@ export class CoachSession {
           // Default is HIGH sensitivity: in a loud hall, background noise counted as the user
           // speaking and cut the coach off mid-sentence.
           realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW } },
+          // Fast replies, and no reasoning text in the output (the transcript once contained the
+          // model's internal reasoning about tool calls).
+          thinkingConfig: { includeThoughts: false }, // (thinkingLevel is not supported on gemini-3.8-live)
           inputAudioTranscription: {},
           outputAudioTranscription: {},
           speechConfig: {
@@ -134,7 +149,12 @@ export class CoachSession {
       for (const part of sc.modelTurn?.parts ?? []) {
         if (part.inlineData?.data) { this.speaking = true; this.send({ type: 'audio', data: part.inlineData.data }); }
       }
-      if (sc.inputTranscription?.text) this.send({ type: 'transcript', who: 'user', text: sc.inputTranscription.text });
+      if (sc.inputTranscription?.text) {
+        const now = Date.now();
+        if (now - this.lastHeardAt > 2500) this.onUserSpeech(); // start of a new utterance
+        this.lastHeardAt = now;
+        this.send({ type: 'transcript', who: 'user', text: sc.inputTranscription.text });
+      }
       if (sc.outputTranscription?.text) this.send({ type: 'transcript', who: 'coach', text: sc.outputTranscription.text });
       if (sc.turnComplete) {
         this.speaking = false;
@@ -231,14 +251,19 @@ export class CoachSession {
   sendFrame(b64) {
     if (!this.session) return;
     this.latestFrame = b64;
-    // The client sends ~2 fps for the inspector; Gemini Live only takes ≤ 1 fps.
+    // Live is the expensive model: it gets a frame only every ~4 s as background context,
+    // plus a fresh one right when the user starts talking (Google booth advice: on demand,
+    // not a constant stream). The inspector may still get up to 2 fps during risky steps.
     const now = Date.now();
-    if (now - this.lastFrameAt < 900) return;
+    if (!this.forceFrame && now - this.lastFrameAt < LIVE_FRAME_GAP_MS) return;
+    this.forceFrame = false;
     this.lastFrameAt = now;
+    this.framesToLive++;
     this.session?.sendRealtimeInput({ video: { data: b64, mimeType: 'image/jpeg' } });
   }
 
   sendText(text) {
+    this.onUserSpeech();
     this.session?.sendRealtimeInput({ text });
   }
 

@@ -67,6 +67,12 @@ if (taskEv.length) {
   }
 }
 
+const st = events.find((e) => e.ev === 'stats');
+if (st) {
+  console.log(`\nData use (${st.minutes} min): ${st.frames_per_min} frames/min = ${st.frame_kb_per_min} KB/min of images, ` +
+    `${st.audio_kb_per_min} KB/min of audio · ${st.frames_to_live_per_min} frames/min to Gemini Live · ${st.inspector_checks_per_min} inspector checks/min`);
+}
+
 const fb = events.filter((e) => e.ev === 'feedback');
 if (fb.length) {
   const right = fb.filter((f) => f.correct).length;

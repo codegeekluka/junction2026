@@ -45,6 +45,7 @@ export class Recorder {
     for (const e of events) this.#write({ ev: 'task', ...e });
   }
   coach(event) { this.#write({ ev: 'coach', ...event }); }
+  stats(s) { this.#write({ ev: 'stats', ...s }); }
   feedback(fb, lastDecision, frameB64) {
     if (!this.enabled) return;
     const frame = frameB64 ? this.#saveFrame(frameB64, `fb${String(this.n).padStart(4, '0')}_${Date.now() % 100000}`) : undefined;

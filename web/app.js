@@ -1,9 +1,11 @@
 // Plan B client: phone camera + mic -> backend (/live) -> Gemini Live -> coach voice.
 // The glasses app (Device Access Toolkit) will speak the same WebSocket protocol.
 
-const FRAME_INTERVAL_MS = 500; // ~2 fps: the inspector checks twice a second; the server passes ≤ 1 fps to Live
-const FRAME_WIDTH = 768;
-const JPEG_QUALITY = 0.7;
+// The SERVER decides the frame rate ('capture' messages): 0.5 fps normally, 2 fps during
+// risky steps, plus single 'snap' frames on demand. Less upload on crowded Wi-Fi.
+const FRAME_WIDTH = 640;
+const JPEG_QUALITY = 0.6;
+let captureFps = 0.5;
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $('status'), toggle = $('toggle'), video = $('preview'), transcript = $('transcript');
@@ -140,6 +142,8 @@ function connectSocket() {
       case 'watch': onWatch(msg); engines.inspector(msg); break;
       case 'decision': renderDecision(msg); engines.check(msg); break;
       case 'hud': renderHud(msg); break;
+      case 'capture': setCaptureRate(msg.fps); break;
+      case 'snap': sendFrameNow(); break;
     }
   };
   ws.onclose = () => {
@@ -274,6 +278,27 @@ $('fb-wrong').onclick = () => { $('fb-pick').hidden = false; $('fb-thanks').text
 const sendMsg = (m) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify(m));
 
 // ---------- Capture ----------
+const canvas = document.createElement('canvas');
+let uploadBytes = 0, uploadSince = Date.now();
+function sendFrameNow() {
+  if (!video.videoWidth) return;
+  canvas.width = FRAME_WIDTH;
+  canvas.height = Math.round(FRAME_WIDTH * video.videoHeight / video.videoWidth);
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const data = canvas.toDataURL('image/jpeg', JPEG_QUALITY).split(',')[1];
+  if (sendMsg({ type: 'frame', data })) { $('frames').textContent = ++framesSent; uploadBytes += data.length; }
+}
+function setCaptureRate(fps) {
+  captureFps = fps;
+  clearInterval(frameTimer);
+  if (running || stream) frameTimer = setInterval(sendFrameNow, 1000 / fps);
+  $('fps').textContent = fps;
+}
+// Upload meter (images + audio), shown under Debug: the number for "how much data do we send".
+setInterval(() => {
+  const min = (Date.now() - uploadSince) / 60000;
+  if (min > 0.05) $('upload').textContent = Math.round(uploadBytes / 1024 / min);
+}, 2000);
 async function startCapture() {
   stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
@@ -284,20 +309,16 @@ async function startCapture() {
   micCtx = new AudioContext({ sampleRate: 16000 });
   await micCtx.audioWorklet.addModule('pcm-worklet.js');
   micNode = new AudioWorkletNode(micCtx, 'pcm-capture');
-  micNode.port.onmessage = (e) => mode === 'coach' && sendMsg({ type: 'audio', data: b64(e.data) });
+  micNode.port.onmessage = (e) => {
+    if (mode !== 'coach') return;
+    const data = b64(e.data);
+    if (sendMsg({ type: 'audio', data })) uploadBytes += data.length;
+  };
   micCtx.createMediaStreamSource(stream).connect(micNode);
 
   outCtx = new AudioContext({ sampleRate: 24000 });
 
-  const canvas = document.createElement('canvas');
-  frameTimer = setInterval(() => {
-    if (!video.videoWidth) return;
-    canvas.width = FRAME_WIDTH;
-    canvas.height = Math.round(FRAME_WIDTH * video.videoHeight / video.videoWidth);
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const data = canvas.toDataURL('image/jpeg', JPEG_QUALITY).split(',')[1];
-    if (sendMsg({ type: 'frame', data })) $('frames').textContent = ++framesSent;
-  }, FRAME_INTERVAL_MS);
+  setCaptureRate(captureFps);
 
   try { wakeLock = await navigator.wakeLock?.request('screen'); } catch {}
 }
@@ -305,6 +326,7 @@ async function startCapture() {
 function stopCapture() {
   clearInterval(frameTimer);
   stream?.getTracks().forEach((t) => t.stop());
+  stream = null;
   micCtx?.close(); outCtx?.close();
   stopPlayback();
   video.srcObject = null;

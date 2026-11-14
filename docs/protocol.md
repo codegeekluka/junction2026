@@ -18,7 +18,7 @@ The web page (`web/app.js`) is a **working reference implementation** of everyth
 | `start` | `handle?` (string) | Start the **voice coach** (Gemini Live). On a reconnect, send the last `handle` you received to resume the same conversation. |
 | `watch` | `set` (string, e.g. `"bottle"`, `"sink_start"`) | Start the **watcher** (Decisions API checks on frames, about 1/s). It can run alongside `start` on the same socket. |
 | `unwatch` | – | Stop the watcher. |
-| `frame` | `data` = base64 **JPEG** | Camera frame. **~1 per second**, about **768 px wide**, JPEG quality ~0.7 (≈50–80 KB). Each frame goes to both the coach and the watcher. Sending faster gains nothing (Gemini Live takes ≤1 fps). |
+| `frame` | `data` = base64 **JPEG** | Camera frame, **~640 px wide**, JPEG quality ~0.6 (≈25–35 KB). **Send at the rate the server asks for** (`capture` message, default 0.5 fps), plus one immediately on every `snap`. |
 | `audio` | `data` = base64 **PCM 16-bit little-endian, 16 kHz, mono** | Mic audio in chunks of ~100 ms (1,600 samples = 3,200 bytes). Only needed in coach mode. |
 | `text` | `text` | Optional typed message to the coach (useful for testing). |
 | `feedback` | `correct` (bool), `expected?` (option id) | Dev only: user tapped Right/Wrong on the watcher answer. |
@@ -37,6 +37,8 @@ The web page (`web/app.js`) is a **working reference implementation** of everyth
 | `watch` | `state`: `on`·`off`, `set`, `questions`, `headline`, `quality` | The watcher started or stopped. `headline` = `{question, title, labels{option: plain words}}` tells you which answer to show big. |
 | `decision` | `answers`, `headline` `{choice, confidence, conflict?}`, `ms`, `serverMs`, or `error` (`timeout`·`failed`) | One watcher result, about once a second. Show `headline.labels[choice]` with its certainty: **≥0.75 "very sure" · ≥0.6 "fairly sure" · below that "not sure, show me another angle"**. An `error` just means that one check was skipped. |
 | `error` | `message` | Show or speak it in plain language (it's already written for users). |
+| **`capture`** | `fps` (0.5 or 2), `reason` | **Set your frame rate to this.** 0.5 fps normally; 2 fps during risky steps (safety step or known mistakes) so it can warn before harm. Saves upload on bad Wi-Fi and tokens. |
+| **`snap`** | – | **Send one frame right now** (user started talking, or said "done" → verification burst). |
 | **`hud`** | `state`, `task`, `step`, `title`, `say`, `gate`, `verified?`, `warning?` | **What the glasses display should show.** Sent whenever the procedure changes. See below. |
 
 ### `hud`: what to show on the glasses display
