@@ -69,7 +69,7 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
 - Make Gemini the visible core, e.g. live multimodal understanding of what the wearer sees.
 - **Credits:** Google DeepMind gives Gemini API credits to up to 400 teams. One person per team fills in https://forms.gle/bByXvjGkW9WZuYwW9. Instructions for accessing the accounts come during the event, and keys are generated in Google AI Studio. **Accounts and participation are 18+ only.**
 - **Support:** Google DeepMind booth at the venue. There was a "Build with Google DeepMind" workshop on Friday.
-- **Gemini Live limits:** audio+video sessions stop after **2 minutes** unless `contextWindowCompression` is on. Also turn on session resumption to survive reconnects. Video input is at most 1 frame per second. Model: `gemini-3.8-live-preview` (model card: `gemini-3.8-live`).
+- **Gemini Live limits:** audio+video sessions stop after **2 minutes** unless `contextWindowCompression` is on. Also turn on session resumption to survive reconnects. Video input is at most 1 frame per second. Model: `gemini-3.8-live` (verified on our key 14.11).
 
 ### ElevenLabs brief (summary)
 - Use ElevenLabs for natural, expressive voice in the project.

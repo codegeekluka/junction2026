@@ -59,7 +59,7 @@ Ray-Ban Meta glasses ──camera + mic (DAT)──▶ phone app ◀── speak
    ┌──────────────────────────┬───────────────┴────────────┬──────────────────────────────┐
    ▼                          ▼                            ▼                              ▼
 Gemini Live               Gemini Decision 1           Gemini Robotics-ER 2          Google Search
-gemini-3.8-live-preview   gemini-decision-1           gemini-robotics-er-2-preview  grounding (via Live)
+gemini-3.8-live           gemini-decision-1           gemini-robotics-er-2-preview  grounding (via Live)
 THE VOICE                 THE WATCHER                 THE POINTER                   model no. → part/manual
 talks, can be interrupted yes/no checks on frames     "where's the slip nut?"
 calls tools               every 1–2 s, ~200 ms,       point/box + whether the step
