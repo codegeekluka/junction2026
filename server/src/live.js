@@ -75,7 +75,10 @@ export class CoachSession {
           sessionResumption: { handle: this.handle },       // survive drops / 10-min connection limit
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.LIVE_VOICE || 'Charon' } } },
+          speechConfig: {
+            languageCode: process.env.LIVE_LANGUAGE || 'en-US', // stops noise being transcribed as other languages
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.LIVE_VOICE || 'Charon' } },
+          },
         },
         callbacks: {
           onopen: () => this.log(`[live] connected (${resuming ? 'resumed' : 'new'})`),
@@ -100,14 +103,24 @@ export class CoachSession {
   }
 
   #onMessage(m) {
-    if (m.setupComplete) this.send({ type: 'status', state: 'live' });
+    if (m.setupComplete) {
+      this.send({ type: 'status', state: 'live' });
+      if (this.afterDrop) {
+        // Tell the user out loud that we're back: they can't see a screen on the glasses.
+        const resumed = this.afterDrop === 'resumed';
+        this.afterDrop = null;
+        setTimeout(() => this.notify(resumed
+          ? 'The connection dropped for a few seconds and is back now. In one short sentence, tell the user you are back and ask them to repeat anything they said in the meantime.'
+          : 'The connection dropped and the conversation had to restart, so you lost what was said before. In one short sentence, say sorry, you are back, and ask what they were working on.'), 300);
+      }
+    }
     if (m.sessionResumptionUpdate?.resumable && m.sessionResumptionUpdate.newHandle) {
       this.handle = m.sessionResumptionUpdate.newHandle;
       this.send({ type: 'handle', handle: this.handle }); // lets the client resume after its own network drop
     }
     if (m.goAway) {
       this.log(`[live] goAway, time left ${m.goAway.timeLeft}; reconnecting`);
-      this.#reconnect();
+      this.#reconnect(false);
     }
     const sc = m.serverContent;
     if (sc) {
@@ -148,7 +161,8 @@ export class CoachSession {
     if (!this.closedByClient && !this.reconnecting) this.#reconnect();
   }
 
-  async #reconnect() {
+  /** @param {boolean} announce  false for planned refreshes (goAway): no need to tell the user */
+  async #reconnect(announce = true) {
     if (this.reconnecting || this.closedByClient) return;
     this.reconnecting = true;
     const old = this.session;
@@ -166,6 +180,7 @@ export class CoachSession {
         this.handle = null;
       }
       try {
+        this.afterDrop = announce ? (this.handle ? 'resumed' : 'fresh') : null;
         await this.#connect(true);
         ok = true;
         break;
@@ -177,6 +192,13 @@ export class CoachSession {
     }
     if (!ok && !this.closedByClient && lastErr && !isFatal(lastErr)) this.#reportFailure(lastErr);
     this.reconnecting = false;
+  }
+
+  /** Demo/testing: cut the connection to Google as if the network dropped. */
+  simulateDrop() {
+    this.log('[live] simulating a connection drop');
+    try { this.session?.conn?.close?.(); } catch {}
+    try { this.session?.close(); } catch {}
   }
 
   sendAudio(b64) {

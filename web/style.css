@@ -74,3 +74,7 @@ body.running.watching .viewport { aspect-ratio: 16 / 9; }
 #hud[data-state="cant_see"] .hud-note { color: #ffd23f; }
 #hud[data-state="finished"] { background: #10281a; border-left-color: #5ad17a; }
 #hud .verified { color: #5ad17a; }
+
+/* Connection banner: impossible to miss while the AI is unreachable */
+#conn { margin: 0; padding: 14px 16px; border-radius: 12px; background: #3a2a10; color: #ffd23f; font-weight: 700; font-size: 1.1rem; }
+#conn[data-state="offline"] { background: #3a1414; color: var(--bad); }

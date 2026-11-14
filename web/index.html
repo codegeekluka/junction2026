@@ -23,6 +23,8 @@
       <video id="preview" playsinline muted autoplay aria-label="Camera preview"></video>
     </div>
 
+    <p id="conn" role="alert" hidden></p>
+
     <section id="hud" aria-live="polite" hidden>
       <p class="hud-task" id="hud-task"></p>
       <p class="hud-step"><span id="hud-step"></span> <span id="hud-title"></span></p>
@@ -75,6 +77,7 @@
     <details>
       <summary>Debug</summary>
       <p>Frames sent: <span id="frames">0</span> · Source: <span id="source">phone camera</span></p>
+      <button type="button" id="sim-drop">Simulate connection drop</button>
     </details>
   </main>
   <script type="module" src="app.js"></script>

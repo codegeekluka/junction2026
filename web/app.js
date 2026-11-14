@@ -66,6 +66,36 @@ function stopPlayback() { // user interrupted the coach: drop queued speech imme
   playHead = 0;
 }
 
+// ---------- Connection banner + sounds ----------
+// On the glasses there is no screen to read, so connection changes are also audible.
+let wasLive = false, lostShown = false;
+function tone(freqs) {
+  if (!outCtx || outCtx.state === 'closed') return;
+  let t = outCtx.currentTime;
+  for (const f of freqs) {
+    const o = outCtx.createOscillator(), g = outCtx.createGain();
+    o.frequency.value = f; o.connect(g); g.connect(outCtx.destination);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.start(t); o.stop(t + 0.2); t += 0.2;
+  }
+}
+function connBanner(state) {
+  const el = $('conn');
+  if (state === 'live') {
+    if (lostShown) tone([523, 784]);           // rising: back
+    el.hidden = true; wasLive = true; lostShown = false;
+    return;
+  }
+  if (!wasLive || state === 'stopped') { el.hidden = true; return; } // first connect / user stopped
+  el.hidden = false;
+  el.dataset.state = state;
+  el.textContent = state === 'offline'
+    ? 'Can’t reach the AI. Check the internet (try a phone hotspot). Still retrying…'
+    : 'Connection lost. Reconnecting… your progress is kept.';
+  if (!lostShown) { tone([659, 440]); lostShown = true; } // falling: lost
+}
+
 // ---------- Socket ----------
 function connectSocket() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -76,7 +106,7 @@ function connectSocket() {
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
     switch (msg.type) {
-      case 'status': setStatus(msg.state); break;
+      case 'status': setStatus(msg.state); connBanner(msg.state); break;
       case 'audio': playPcm(msg.data); break;
       case 'interrupted': stopPlayback(); break;
       case 'transcript': addLine(msg.who, msg.text); break;
@@ -91,6 +121,7 @@ function connectSocket() {
   ws.onclose = () => {
     if (!running) return;
     setStatus('reconnecting', 'Connection lost. Reconnecting… (your progress is kept)');
+    connBanner('reconnecting');
     setTimeout(() => running && connectSocket(), 1500);
   };
 }
@@ -270,6 +301,7 @@ toggle.addEventListener('click', async () => {
     document.querySelectorAll('input[name="mode"]').forEach((r) => (r.disabled = false));
     $('watch-panel').hidden = true;
     $('hud').hidden = true;
+    $('conn').hidden = true; wasLive = false; lostShown = false;
     setStatus('stopped');
     return;
   }
@@ -296,3 +328,6 @@ toggle.addEventListener('click', async () => {
 });
 
 addEventListener('offline', () => running && setStatus('offline', 'No internet: waiting to reconnect…'));
+
+// Demo/testing: show the judges how a dropped connection is handled.
+$('sim-drop').onclick = () => sendMsg({ type: 'simulate_drop' });
