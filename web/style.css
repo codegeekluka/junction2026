@@ -1,4 +1,5 @@
 :root { color-scheme: dark; --fg: #f5f5f5; --muted: #a3a3a3; --accent: #ffb020; --bad: #ff5a5a; }
+[hidden] { display: none !important; }
 * { box-sizing: border-box; }
 body { margin: 0; background: #111; color: var(--fg); font: 18px/1.45 system-ui, sans-serif; }
 main { max-width: 640px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 32px; display: grid; gap: 14px; }
@@ -78,3 +79,14 @@ body.running.watching .viewport { aspect-ratio: 16 / 9; }
 /* Connection banner: impossible to miss while the AI is unreachable */
 #conn { margin: 0; padding: 14px 16px; border-radius: 12px; background: #3a2a10; color: #ffd23f; font-weight: 700; font-size: 1.1rem; }
 #conn[data-state="offline"] { background: #3a1414; color: var(--bad); }
+
+/* Engine indicator: which Gemini model is doing what */
+#engines { display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+#engines p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+#engines b { color: var(--fg); font-weight: 600; }
+#engines .dot { width: 10px; height: 10px; border-radius: 50%; background: #444; flex: none; }
+#engines [data-on="true"] .dot { background: #5ad17a; }
+#engines .last { margin-left: auto; font-variant-numeric: tabular-nums; }
+#engines .blink .dot { animation: blink 300ms ease-out; }
+@keyframes blink { from { box-shadow: 0 0 0 6px rgba(90, 209, 122, 0.5); } to { box-shadow: 0 0 0 0 rgba(90, 209, 122, 0); } }
+@media (prefers-reduced-motion: reduce) { #engines .blink .dot { animation: none; } }

@@ -54,7 +54,10 @@ function playPcm(base64) {
   const src = outCtx.createBufferSource();
   src.buffer = buf;
   src.connect(outCtx.destination);
-  playHead = Math.max(playHead, outCtx.currentTime + 0.05);
+  // Jitter buffer: when a new utterance starts (queue empty), begin 0.25 s ahead so chunks
+  // that arrive late over shaky Wi-Fi don't leave audible gaps.
+  const idle = playHead < outCtx.currentTime;
+  playHead = Math.max(playHead, outCtx.currentTime + (idle ? 0.25 : 0.03));
   src.start(playHead);
   playHead += buf.duration;
   playing.add(src);
@@ -65,6 +68,27 @@ function stopPlayback() { // user interrupted the coach: drop queued speech imme
   playing.clear();
   playHead = 0;
 }
+
+// ---------- Which Gemini model is working (for us and the judges) ----------
+const engines = {
+  voice(state) {
+    const el = $('eng-voice');
+    el.dataset.on = state === 'live';
+    el.querySelector('.st').textContent = state === 'live' ? 'listening & watching (~1 frame/s)' : state;
+  },
+  inspector(msg) {
+    const el = $('eng-insp');
+    el.dataset.on = msg.state === 'on';
+    el.querySelector('.st').textContent = msg.state === 'on'
+      ? `checking ${Object.keys(msg.questions).filter((k) => !k.startsWith('__')).length} questions per frame, about once a second`
+      : 'off (starts when an expert procedure runs)';
+  },
+  check(msg) {
+    const el = $('eng-insp');
+    el.querySelector('.last').textContent = msg.error ? `last check: ${msg.error}` : `last answer in ${(msg.ms / 1000).toFixed(2)} s`;
+    el.classList.remove('blink'); void el.offsetWidth; el.classList.add('blink');
+  },
+};
 
 // ---------- Connection banner + sounds ----------
 // On the glasses there is no screen to read, so connection changes are also audible.
@@ -106,15 +130,15 @@ function connectSocket() {
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
     switch (msg.type) {
-      case 'status': setStatus(msg.state); connBanner(msg.state); break;
+      case 'status': setStatus(msg.state); connBanner(msg.state); engines.voice(msg.state); break;
       case 'audio': playPcm(msg.data); break;
       case 'interrupted': stopPlayback(); break;
       case 'transcript': addLine(msg.who, msg.text); break;
       case 'turnComplete': lastLine = null; break;
       case 'handle': resumeHandle = msg.handle; break;
       case 'error': addLine('system', msg.message); lastLine = null; break;
-      case 'watch': onWatch(msg); break;
-      case 'decision': renderDecision(msg); break;
+      case 'watch': onWatch(msg); engines.inspector(msg); break;
+      case 'decision': renderDecision(msg); engines.check(msg); break;
       case 'hud': renderHud(msg); break;
     }
   };
