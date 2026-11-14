@@ -41,13 +41,17 @@ function attachLive(server) {
     const watcher = new Watcher(send, log, recorder);
     const orch = connect({ coach, watcher, send, log, recorder });
 
+    const usage = { t0: Date.now(), frames: 0, frameBytes: 0, audioBytes: 0 };
+
     ws.on('message', async (raw) => {
       let msg;
       try { msg = JSON.parse(raw); } catch { return; }
       switch (msg.type) {
         case 'start': coach.start(msg.handle).catch(() => {}); break;
-        case 'audio': coach.sendAudio(msg.data); break;
-        case 'frame': coach.sendFrame(msg.data); watcher.setFrame(msg.data); break;
+        case 'audio': usage.audioBytes += msg.data.length * 0.75; coach.sendAudio(msg.data); break;
+        case 'frame':
+          usage.frames++; usage.frameBytes += msg.data.length * 0.75;
+          coach.sendFrame(msg.data); watcher.setFrame(msg.data); break;
         case 'watch': watcher.start(msg.set); break;
         case 'unwatch': watcher.stop(); break;
         case 'task': orch.startTask(msg.task); break;
@@ -57,7 +61,20 @@ function attachLive(server) {
         case 'stop': coach.close(); watcher.close(); send({ type: 'status', state: 'stopped' }); break;
       }
     });
-    ws.on('close', () => { log('client disconnected'); coach.close(); watcher.close(); });
+    ws.on('close', () => {
+      const min = Math.max((Date.now() - usage.t0) / 60000, 1 / 60);
+      const stats = {
+        minutes: +min.toFixed(2),
+        frames_per_min: Math.round(usage.frames / min),
+        frame_kb_per_min: Math.round(usage.frameBytes / 1024 / min),
+        audio_kb_per_min: Math.round(usage.audioBytes / 1024 / min),
+        frames_to_live_per_min: Math.round(coach.framesToLive / min),
+        inspector_checks_per_min: Math.round(watcher.calls / min),
+      };
+      log('usage', JSON.stringify(stats));
+      if (usage.frames) recorder.stats(stats);
+      coach.close(); watcher.close();
+    });
   });
 }
 

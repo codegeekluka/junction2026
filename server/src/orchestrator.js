@@ -10,7 +10,31 @@ import { TASKS } from './tasks.js';
 export function connect({ coach, watcher, send, log, recorder }) {
   let runner = null;
 
+  // ---- Capture policy (Google booth: verify at the moments that matter, don't stream) ----
+  // The server tells the client how many frames to send; less upload on crowded Wi-Fi.
+  //   no procedure / plain step : 0.5 fps (one frame every 2 s)
+  //   risky step (safety gate or known mistakes): 2 fps, to warn before harm happens
+  //   "done" / "is it right?"   : immediate burst of 3 frames
+  let fps = null;
+  const capturePolicy = () => {
+    const step = runner && !runner.finished ? runner.step : null;
+    const risky = Boolean(step && (step.gate || step.mistakes?.length));
+    // CAPTURE_MODE=careful → 2 fps on every step (more corrections, more data);
+    // default "smart" → 2 fps only on risky steps. See docs/DECISIONS.md (smart capture).
+    const careful = process.env.CAPTURE_MODE === 'careful';
+    const want = risky || (careful && step) ? 2 : 0.5;
+    if (want !== fps) {
+      fps = want;
+      send({ type: 'capture', fps, reason: risky ? `risky step: "${step.title}"` : step ? 'normal step' : 'no procedure running' });
+    }
+  };
+  const snap = (n = 1, gapMs = 350) => { for (let i = 0; i < n; i++) setTimeout(() => send({ type: 'snap' }), i * gapMs); };
+
+  // User started talking: Live should see what they see right now.
+  coach.onUserSpeech = () => { coach.forceFrame = true; snap(1); };
+
   const hud = (state, extra = {}) => {
+    capturePolicy();
     const s = runner?.status();
     send({ type: 'hud', state, task: s?.title ?? null,
       step: s?.step ? `${s.step.n}/${s.step.of}` : null, title: s?.step?.title ?? null,
@@ -50,7 +74,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
         timer = setTimeout(flush, BATCH_MS);
       } else if (e.kind === 'mistake') {
         verified = []; clearTimeout(timer); timer = null; // a warning beats stale "well done" news
-        coach.notify(`URGENT, say it now: ${e.say}`);
+        coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
         hud('mistake', { warning: e.say });
       } else if (e.kind === 'cant_see') {
         coach.notify('The camera view is too dark or blurry to check this step. Ask them to move closer or add light.');
@@ -70,6 +94,18 @@ export function connect({ coach, watcher, send, log, recorder }) {
         const s = runner.status();
         return { ok: true, procedure: s.title, steps: s.step.of, first_step: s.step.title, tell_user: s.step.say,
           note: 'The camera inspector will confirm each step; wait for its [INSPECTOR] message before moving on.' };
+      }
+      case 'verify_now': {
+        if (!runner || runner.finished) return { ok: false, error: 'No procedure step to verify.' };
+        const step = runner.status().step;
+        watcher.burst(3, (last, events) => {
+          if (events.some((e) => e.kind === 'advance' || e.kind === 'finished')) return; // verified: the normal message covers it
+          const p = last?.headline?.choice === 'done' ? last.headline.confidence : 1 - (last?.headline?.confidence ?? 0.5);
+          coach.notify(`Checked closely: step "${step.title}" is NOT verified yet (only ${Math.round(p * 100)}% sure it is done). ` +
+            'Tell the user briefly, and ask them to show it clearly to the camera or finish it.');
+        });
+        snap(3);
+        return { ok: true, checking: true, note: 'Say you are checking. The inspector result arrives in a moment as an [INSPECTOR] message.' };
       }
       case 'get_task_status': {
         if (!runner) return { active: false, available: Object.keys(TASKS) };
@@ -93,6 +129,8 @@ export function connect({ coach, watcher, send, log, recorder }) {
         return { error: `Unknown tool ${name}` };
     }
   };
+
+  capturePolicy();
 
   // Let the client start a procedure directly too (testing without voice).
   return {

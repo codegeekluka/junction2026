@@ -117,3 +117,4 @@ Our edge: an **architect** and a **designer** (spaces, inclusive design, pitch),
 - Keep the demo path working at all times; do the polish later.
 - Secrets go in `.env` (git-ignored), never in code or chat.
 - Update this file when we make a decision, so everyone's AI has the same context.
+- **Log every design decision with its reasoning in `docs/DECISIONS.md`** (decision → why → evidence → which judging criterion). The pitch, deck and Q&A are built from it.

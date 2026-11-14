@@ -12,7 +12,7 @@ import { QUESTION_SETS, HEADLINES, QUALITY_QUESTION } from './questions.js';
 import { STEP_HEADLINE } from './task-runner.js';
 
 const MODEL = 'gemini-decision-1';
-const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 1000);
+const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 450); // ~2 checks/s (frames arrive at ~2 fps)
 const TIMEOUT_MS = 3000;
 
 export class Watcher {
@@ -30,6 +30,9 @@ export class Watcher {
     this.setName = null;
     this.questions = null;
     this.runner = null;
+    this.calls = 0;
+    this.burstLeft = 0;
+    this.burstCb = null;
     /** @type {(events: object[], runner: import('./task-runner.js').TaskRunner) => void} */
     this.onTaskEvents = () => {};
   }
@@ -40,6 +43,7 @@ export class Watcher {
       return;
     }
     this.#begin(setName, QUESTION_SETS[setName], HEADLINES[setName], QUALITY_QUESTION, null);
+    this.send({ type: 'capture', fps: 2, reason: 'tuning: steady checks' });
   }
 
   /** Run an expert procedure: all its questions are asked on every frame. */
@@ -62,6 +66,13 @@ export class Watcher {
   setFrame(b64) {
     this.frame = b64;
     this.frameSeq++;
+    if (this.burstLeft > 0) this.#tick(); // verifying on request: check this frame right away
+  }
+
+  /** Check the next n frames as soon as they arrive, then call cb(lastDecision). */
+  burst(n, cb) {
+    this.burstLeft = n;
+    this.burstCb = cb;
   }
 
   async #tick() {
@@ -72,6 +83,7 @@ export class Watcher {
     const frame = this.frame;
     const t0 = performance.now();
     try {
+      this.calls++;
       const { res, serverMs } = await callDecisions({
         model: MODEL,
         input: [{ type: 'image', data: frame, mime_type: 'image/jpeg', resolution: 'low' }],
@@ -97,6 +109,11 @@ export class Watcher {
       if (events.length) {
         this.recorder?.taskEvents(events);
         this.onTaskEvents(events, this.runner);
+      }
+      if (this.burstLeft > 0 && --this.burstLeft === 0) {
+        const cb = this.burstCb;
+        this.burstCb = null;
+        cb?.(msg, events);
       }
     } catch (err) {
       const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
