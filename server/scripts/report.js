@@ -16,7 +16,7 @@ const events = fs.readFileSync(path.join(dir, 'events.jsonl'), 'utf8').trim().sp
 
 const pct = (a, p) => a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : '-';
 const set = events.find((e) => e.ev === 'watch')?.set;
-const head = HEADLINES[set]?.question;
+const head = HEADLINES[set]?.question ?? (set?.startsWith('task:') ? '__step' : undefined);
 const decisions = events.filter((e) => e.ev === 'decision');
 const ok = decisions.filter((d) => !d.error);
 const errors = decisions.filter((d) => d.error);
@@ -52,6 +52,19 @@ if (head) {
   console.log(`Certainty: very sure ${bands.sure} · fairly sure ${bands.maybe} · not sure ${bands.unsure}`);
   console.log(`Answer changes: ${changes} · flickers (A→B→A): ${flickers} · gate conflicts: ${conflicts}`);
   console.log('Timeline:', seq.map((a) => (a.confidence < 0.6 ? a.choice[0] : a.choice[0].toUpperCase())).join(''), '(capital = sure)');
+}
+
+const taskEv = events.filter((e) => e.ev === 'task');
+if (taskEv.length) {
+  console.log('\nTask events:');
+  const t0 = decisions[0]?.t ?? taskEv[0].t;
+  for (const e of taskEv) {
+    const at = ((e.t - t0) / 1000).toFixed(1).padStart(6);
+    if (e.kind === 'advance') console.log(`  ${at}s  ✓ step ${e.from.n} "${e.from.title}" verified → step ${e.to.n} "${e.to.title}"`);
+    else if (e.kind === 'finished') console.log(`  ${at}s  ✓ step ${e.from.n} "${e.from.title}" verified → TASK DONE`);
+    else if (e.kind === 'mistake') console.log(`  ${at}s  ⚠ mistake "${e.id}" (${Math.round(e.p * 100)}%)`);
+    else console.log(`  ${at}s  ${e.kind}`);
+  }
 }
 
 const fb = events.filter((e) => e.ev === 'feedback');

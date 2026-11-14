@@ -41,6 +41,10 @@ export class Recorder {
     const frame = ALL_FRAMES && frameB64 ? this.#saveFrame(frameB64, `d${String(n).padStart(4, '0')}`) : undefined;
     this.#write({ ev: 'decision', n, set: msg.set, ms: msg.ms, serverMs: msg.serverMs, pingMs: msg.pingMs, error: msg.error, stale: msg.stale, answers: msg.answers, headline: msg.headline, frame });
   }
+  taskEvents(events) {
+    for (const e of events) this.#write({ ev: 'task', ...e });
+  }
+  coach(event) { this.#write({ ev: 'coach', ...event }); }
   feedback(fb, lastDecision, frameB64) {
     if (!this.enabled) return;
     const frame = frameB64 ? this.#saveFrame(frameB64, `fb${String(this.n).padStart(4, '0')}_${Date.now() % 100000}`) : undefined;

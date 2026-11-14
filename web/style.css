@@ -59,3 +59,18 @@ details { color: var(--muted); font-size: 0.85rem; }
 /* While running: hide setup, keep camera + answer + Stop on one screen */
 body.running #consent, body.running #mode { display: none; }
 body.running.watching .viewport { aspect-ratio: 16 / 9; }
+
+/* Step card (the same info the glasses display shows) */
+#hud { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: #10202e; border-left: 6px solid #4ea8ff; }
+#hud p { margin: 0; }
+.hud-task { color: var(--muted); font-size: 0.85rem; }
+.hud-step { font-size: 1.35rem; font-weight: 800; }
+#hud-step { color: #4ea8ff; margin-right: 6px; }
+.hud-say { font-size: 1rem; }
+.hud-note { font-weight: 700; min-height: 0; }
+#hud[data-state="mistake"] { background: #2e1414; border-left-color: var(--bad); }
+#hud[data-state="mistake"] .hud-note { color: var(--bad); }
+#hud[data-state="cant_see"] { border-left-color: #ffd23f; }
+#hud[data-state="cant_see"] .hud-note { color: #ffd23f; }
+#hud[data-state="finished"] { background: #10281a; border-left-color: #5ad17a; }
+#hud .verified { color: #5ad17a; }

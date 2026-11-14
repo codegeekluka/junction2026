@@ -1,12 +1,15 @@
 // The watcher: runs the Gemini Decisions API on the latest camera frame, about once a
 // second, and reports calibrated answers + confidence. Cheap and fast (~0.5 s), so it
-// can watch continuously. Later (step 5) it walks the repair decision tree and asks
-// Gemini Live for help when confidence is low.
+// can watch continuously. Two modes:
+//   start(set)        – a plain question set (bottle / sink tests, tuning)
+//   startTask(runner) – an expert procedure: every answer goes to the TaskRunner, whose
+//                       events (step verified, mistake, can't see) go to onTaskEvents.
 //
 // Lessons from probes/README.md: api_version v1beta is required, SDK auto-retries must be
 // off, and a hard AbortSignal timeout is needed (one call once hung for 590 s).
 
 import { QUESTION_SETS, HEADLINES, QUALITY_QUESTION } from './questions.js';
+import { STEP_HEADLINE } from './task-runner.js';
 
 const MODEL = 'gemini-decision-1';
 const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 1000);
@@ -25,6 +28,10 @@ export class Watcher {
     this.timer = null;
     this.busy = false;
     this.setName = null;
+    this.questions = null;
+    this.runner = null;
+    /** @type {(events: object[], runner: import('./task-runner.js').TaskRunner) => void} */
+    this.onTaskEvents = () => {};
   }
 
   start(setName) {
@@ -32,11 +39,23 @@ export class Watcher {
       this.send({ type: 'error', message: `Unknown question set "${setName}"` });
       return;
     }
+    this.#begin(setName, QUESTION_SETS[setName], HEADLINES[setName], QUALITY_QUESTION, null);
+  }
+
+  /** Run an expert procedure: all its questions are asked on every frame. */
+  startTask(runner) {
+    const questions = describe(runner.questions());
+    questions.__step = { type: 'choice', label: 'Current step', options: Object.keys(STEP_HEADLINE.labels) };
+    this.#begin(`task:${runner.id}`, runner.questions(), STEP_HEADLINE, runner.task.quality, runner, questions);
+  }
+
+  #begin(name, questions, headlineDef, quality, runner, described = describe(questions)) {
     this.stop();
-    this.setName = setName;
-    this.send({ type: 'watch', state: 'on', set: setName, questions: describe(QUESTION_SETS[setName]),
-      headline: HEADLINES[setName], quality: QUALITY_QUESTION });
-    this.recorder?.start(setName);
+    this.setName = name;
+    this.questions = questions;
+    this.runner = runner;
+    this.send({ type: 'watch', state: 'on', set: name, questions: described, headline: headlineDef, quality });
+    this.recorder?.start(name);
     this.timer = setInterval(() => this.#tick(), INTERVAL_MS);
   }
 
@@ -56,9 +75,12 @@ export class Watcher {
       const { res, serverMs } = await callDecisions({
         model: MODEL,
         input: [{ type: 'image', data: frame, mime_type: 'image/jpeg', resolution: 'low' }],
-        questions: toApi(QUESTION_SETS[this.setName]),
+        questions: toApi(this.questions),
       });
       if (!this.timer) return; // stopped while waiting
+      let head, events = [];
+      if (this.runner) ({ headline: head, events } = this.runner.update(res.answers));
+      else head = headline(this.setName, res.answers);
       const msg = {
         type: 'decision',
         set: this.setName,
@@ -66,12 +88,16 @@ export class Watcher {
         stale: this.frameSeq - seq, // frames that arrived while we waited
         serverMs,                   // Google's own processing time (server-timing header)
         answers: res.answers,
-        headline: headline(this.setName, res.answers),
+        headline: head,
       };
       this.lastDecision = msg;
       this.lastFrameUsed = frame;
       this.send(msg);
       this.recorder?.decision(msg, frame);
+      if (events.length) {
+        this.recorder?.taskEvents(events);
+        this.onTaskEvents(events, this.runner);
+      }
     } catch (err) {
       const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
       this.log('[watch]', timedOut ? `timeout after ${TIMEOUT_MS} ms` : err?.message || err);
@@ -96,6 +122,7 @@ export class Watcher {
     this.timer = null;
     if (this.setName) this.send({ type: 'watch', state: 'off' });
     this.setName = null;
+    this.runner = null;
   }
 
   close() {
@@ -132,6 +159,7 @@ async function pingGoogle() {
 // if the gate and the multiple-choice answer disagree, certainty drops to "not sure".
 export function headline(setName, answers) {
   const h = HEADLINES[setName];
+  if (!h) return null;
   const main = answers?.[h?.question];
   if (!main) return null;
   if (!h.gate) return { choice: main.choice, confidence: main.confidence };

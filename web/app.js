@@ -85,6 +85,7 @@ function connectSocket() {
       case 'error': addLine('system', msg.message); lastLine = null; break;
       case 'watch': onWatch(msg); break;
       case 'decision': renderDecision(msg); break;
+      case 'hud': renderHud(msg); break;
     }
   };
   ws.onclose = () => {
@@ -93,6 +94,24 @@ function connectSocket() {
     setTimeout(() => running && connectSocket(), 1500);
   };
 }
+// ---------- Step card (HUD) ----------
+function renderHud(h) {
+  const card = $('hud');
+  if (h.state === 'stopped') { card.hidden = true; return; }
+  card.hidden = false;
+  card.dataset.state = h.state;
+  $('hud-task').textContent = h.task ?? '';
+  $('hud-step').textContent = h.state === 'finished' ? '✓' : h.step ? `Step ${h.step}` : '';
+  $('hud-title').textContent = h.state === 'finished' ? 'Job done' : (h.title ?? '');
+  $('hud-say').textContent = h.state === 'finished' ? '' : (h.say ?? '');
+  const note = $('hud-note');
+  note.className = 'hud-note';
+  if (h.state === 'mistake') note.textContent = `⚠ ${h.warning}`;
+  else if (h.state === 'cant_see') note.textContent = 'Can’t see clearly. Move closer or add light.';
+  else if (h.verified) { note.textContent = `✓ Verified: ${h.verified}`; note.classList.add('verified'); }
+  else note.textContent = h.gate ? 'Safety step: must be verified before continuing' : '';
+}
+
 // ---------- Watcher panel ----------
 // Big plain answer + a separate certainty label. Colour only ever means certainty
 // (the dot) or which answer it was (history strip), never "good/bad".
@@ -250,6 +269,7 @@ toggle.addEventListener('click', async () => {
     document.body.classList.remove('running', 'watching');
     document.querySelectorAll('input[name="mode"]').forEach((r) => (r.disabled = false));
     $('watch-panel').hidden = true;
+    $('hud').hidden = true;
     setStatus('stopped');
     return;
   }

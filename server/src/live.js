@@ -8,6 +8,33 @@ import { SYSTEM_PROMPT } from './prompt.js';
 const MODEL = process.env.LIVE_MODEL || 'gemini-3.8-live';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, httpOptions: { apiVersion: 'v1beta' } });
 
+// Tools the voice model can call. Step progress itself is NOT a tool: only the watcher's
+// verified checks advance a procedure, so the model can't claim a step is done.
+const TOOL_DECLARATIONS = [
+  {
+    name: 'start_task',
+    description: 'Start one of the expert-verified repair procedures when the user wants to do that job. The camera inspector then checks every step. Returns the first step to tell the user.',
+    parameters: { type: 'OBJECT', properties: {
+      task_id: { type: 'STRING', description: 'Procedure id from the list in your instructions.' },
+    }, required: ['task_id'] },
+  },
+  {
+    name: 'get_task_status',
+    description: 'Current procedure, step number and what the camera inspector last saw. Use when the user asks what step they are on or whether something is done.',
+    parameters: { type: 'OBJECT', properties: {} },
+  },
+  {
+    name: 'skip_step',
+    description: 'Skip the current step ONLY if the user explicitly asks to skip it. Safety steps cannot be skipped.',
+    parameters: { type: 'OBJECT', properties: {} },
+  },
+  {
+    name: 'stop_task',
+    description: 'Stop the current procedure (user wants to stop or switch job).',
+    parameters: { type: 'OBJECT', properties: {} },
+  },
+];
+
 const isFatal = (err) => /quota|billing|API key|permission|not found|unauthenticated/i.test(String(err?.message || err));
 
 export class CoachSession {
@@ -21,6 +48,8 @@ export class CoachSession {
     this.reconnecting = false;
     this.latestFrame = null;   // base64 JPEG, kept in memory only (for tools later)
     this.gen = 0;              // connection generation; ignore events from stale sessions
+    /** Tool handler set by the orchestrator: async (name, args) => result object */
+    this.onTool = async (name) => ({ error: `tool ${name} not available` });
   }
 
   /** @param {string|null} handle  resumption handle from a previous connection (client reconnect) */
@@ -41,7 +70,7 @@ export class CoachSession {
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: SYSTEM_PROMPT,
-          tools: [{ googleSearch: {} }],
+          tools: [{ googleSearch: {} }, { functionDeclarations: TOOL_DECLARATIONS }],
           contextWindowCompression: { slidingWindow: {} }, // lifts the 2-min audio+video cap
           sessionResumption: { handle: this.handle },       // survive drops / 10-min connection limit
           inputAudioTranscription: {},
@@ -90,13 +119,25 @@ export class CoachSession {
       if (sc.outputTranscription?.text) this.send({ type: 'transcript', who: 'coach', text: sc.outputTranscription.text });
       if (sc.turnComplete) this.send({ type: 'turnComplete' });
     }
-    if (m.toolCall?.functionCalls?.length) {
-      // Build step 4 wires real tools here (check_step, safety_gate, locate, ...).
-      const functionResponses = m.toolCall.functionCalls.map((fc) => ({
-        id: fc.id, name: fc.name, response: { error: `tool ${fc.name} not implemented yet` },
-      }));
-      this.session?.sendToolResponse({ functionResponses });
+    if (m.toolCall?.functionCalls?.length) this.#handleTools(m.toolCall.functionCalls);
+  }
+
+  async #handleTools(calls) {
+    const functionResponses = [];
+    for (const fc of calls) {
+      let response;
+      try { response = await this.onTool(fc.name, fc.args ?? {}); }
+      catch (err) { response = { error: String(err?.message || err) }; }
+      this.log(`[live] tool ${fc.name}(${JSON.stringify(fc.args ?? {})}) ->`, JSON.stringify(response).slice(0, 160));
+      functionResponses.push({ id: fc.id, name: fc.name, response });
     }
+    this.session?.sendToolResponse({ functionResponses });
+  }
+
+  /** A verified observation from the watcher. The coach turns it into one short spoken line. */
+  notify(text) {
+    this.log('[live] inspector:', text);
+    this.session?.sendRealtimeInput({ text: `[INSPECTOR] ${text}` });
   }
 
   #onClose(e) {

@@ -23,6 +23,13 @@
       <video id="preview" playsinline muted autoplay aria-label="Camera preview"></video>
     </div>
 
+    <section id="hud" aria-live="polite" hidden>
+      <p class="hud-task" id="hud-task"></p>
+      <p class="hud-step"><span id="hud-step"></span> <span id="hud-title"></span></p>
+      <p class="hud-say" id="hud-say"></p>
+      <p class="hud-note" id="hud-note"></p>
+    </section>
+
     <section id="watch-panel" aria-label="What the watcher sees" hidden>
       <p class="w-title" id="w-title"></p>
       <p class="w-verdict" id="w-verdict" aria-live="polite">Looking…</p>
