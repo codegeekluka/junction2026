@@ -1,8 +1,9 @@
 // ServerConnection - the app's link to our backend (server/ in the repo).
 //
 // One WebSocket to ws://<host>:8080/live, speaking the JSON protocol in docs/protocol.md.
-// Milestone 1 uses only the "task" path: start a procedure (e.g. bottle_demo), stream camera
-// frames, and show the hud / decision messages that come back. Voice (start/audio) comes later.
+// So far it uses the "task" path: start a procedure (e.g. bottle_demo), stream camera frames at
+// the rate the server asks for ("capture" / "snap"), and show the hud / decision messages that come
+// back. Voice (start/audio) comes in Milestone 3.
 //
 // During development the phone reaches the laptop through the USB cable:
 //   adb reverse tcp:8080 tcp:8080   →   ws://localhost:8080/live on the phone = the laptop's server.
@@ -13,6 +14,7 @@ import android.util.Log
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +51,12 @@ data class ServerUiState(
     val watcherMs: Int? = null,
     val framesSent: Int = 0,
     val lastError: String? = null,
+    // The server decides how often we send frames ("capture"): 0.5 fps normally, 2 on risky steps.
+    val captureFps: Double = DEFAULT_CAPTURE_FPS,
+    val captureReason: String? = null,
 )
+
+const val DEFAULT_CAPTURE_FPS = 0.5
 
 class ServerConnection(
     private val scope: CoroutineScope,
@@ -76,6 +83,9 @@ class ServerConnection(
 
   // Plain-words labels for the watcher's answer options, sent once in the "watch" message.
   private var headlineLabels: JSONObject? = null
+
+  /** "snap": the server wants one frame right now (user spoke, or said "done"). */
+  val snapRequests = Channel<Unit>(Channel.CONFLATED)
 
   val isConnected: Boolean
     get() = _state.value.link == Link.CONNECTED
@@ -143,6 +153,11 @@ class ServerConnection(
         "watch" -> headlineLabels = msg.optJSONObject("headline")?.optJSONObject("labels")
         "decision" -> handleDecision(msg)
         "error" -> _state.update { it.copy(lastError = msg.optString("message")) }
+        "capture" -> {
+          val fps = msg.optDouble("fps", DEFAULT_CAPTURE_FPS).takeIf { it > 0 } ?: DEFAULT_CAPTURE_FPS
+          _state.update { it.copy(captureFps = fps, captureReason = msg.optNullableString("reason")) }
+        }
+        "snap" -> snapRequests.trySend(Unit)
         // status / audio / transcript / handle are for the voice coach (Milestone 3).
       }
     }

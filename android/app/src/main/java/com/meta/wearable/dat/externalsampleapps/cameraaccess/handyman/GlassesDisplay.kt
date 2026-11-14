@@ -139,16 +139,21 @@ class GlassesDisplay(
           hud.task?.let { text(it, style = TextStyle.BODY, color = TextColor.SECONDARY) }
         }
         hud.state == "stopped" -> text("Stopped", style = TextStyle.HEADING)
+        // Diagnosis (the server works out what's wrong before a procedure starts).
+        hud.state == "diagnosing" || hud.state == "diagnosed" -> {
+          text("Diagnosis", style = TextStyle.META, color = TextColor.SECONDARY)
+          hud.title?.let { text(it, style = TextStyle.HEADING) }
+          hud.say?.let { text(it, style = TextStyle.BODY, color = TextColor.SECONDARY) }
+        }
         else -> {
-          text(
+          val label =
               listOfNotNull(hud.step?.let { "Step $it" }, if (hud.gate) "Safety" else null)
-                  .joinToString(" · "),
-              style = TextStyle.META,
-              color = TextColor.SECONDARY,
-          )
+                  .joinToString(" · ")
+          if (label.isNotEmpty()) text(label, style = TextStyle.META, color = TextColor.SECONDARY)
           hud.title?.let { text(it, style = TextStyle.HEADING) }
           when (hud.state) {
             "mistake" -> hud.warning?.let { text("⚠ $it", style = TextStyle.BODY) }
+            "unsure" -> text("? ${hud.warning ?: "Show it from another angle"}", style = TextStyle.BODY)
             "cant_see" -> text("Can't see: move closer or add light", style = TextStyle.BODY)
             else -> hud.verified?.let { text("✓ $it", style = TextStyle.BODY, color = TextColor.SECONDARY) }
           }

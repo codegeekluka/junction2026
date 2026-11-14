@@ -15,6 +15,7 @@ The Meta glasses client for our backend. It streams the glasses camera (through 
 The server address is `ws://localhost:8080/live` (`handyman/ServerConnection.kt`, `DEFAULT_URL`).
 
 ## Status
-- ✅ Milestone 1: connect to the server, start `bottle_demo`, send 1 JPEG frame/s (copied from the decoded preview with PixelCopy), show `hud` + `decision`.
+- ✅ Milestone 1: connect to the server, start `bottle_demo`, send JPEG frames (copied from the decoded preview with PixelCopy), show `hud` + `decision`.
+- 🟡 Milestone 2.5 (built, not yet tested): frame rate set by the server (`capture` 0.5/2 fps, `snap` = one frame now), 640 px / q60 frames, diagnosis + "unsure" card states.
 - 🟡 Milestone 2 (built, not yet tested): text step card on the glasses display (`handyman/GlassesDisplay.kt`), redrawn on every `hud`; in-app preview + Chrome preview server for the mock Ray-Ban Display (`handyman/MockPreview.kt`, `GlassesPreview.kt`). Glasses without a display fall back to phone-only.
 - ⬜ Milestone 3: voice in and out (`start` / `audio`).

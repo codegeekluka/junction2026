@@ -17,8 +17,8 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 object FrameGrabber {
-  const val TARGET_WIDTH = 768 // docs/protocol.md: ~768 px wide
-  private const val JPEG_QUALITY = 70 // ≈ 50–80 KB per frame
+  const val TARGET_WIDTH = 640 // docs/protocol.md: ~640 px wide
+  private const val JPEG_QUALITY = 60 // ≈ 25–35 KB per frame
 
   private val copyThread = HandlerThread("Handyman:PixelCopy").apply { start() }
   private val copyHandler = Handler(copyThread.looper)

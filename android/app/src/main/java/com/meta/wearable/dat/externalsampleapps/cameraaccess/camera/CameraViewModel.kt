@@ -69,6 +69,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class CameraViewModel(
     application: Application,
@@ -80,7 +81,9 @@ class CameraViewModel(
     private const val FRAME_RATE = 24
     private const val KEYFRAME_WAIT_STEP_MS = 25L
     private const val KEYFRAME_WAIT_MAX_MS = 500L
-    private const val FRAME_INTERVAL_MS = 1000L // Gemini Live takes at most 1 frame per second
+    // Frame pacing bounds around the server's "capture" fps (0.5–2 fps in practice).
+    private const val MIN_FRAME_INTERVAL_MS = 250L
+    private const val MAX_FRAME_INTERVAL_MS = 4000L
   }
 
   private class RecorderFrame(
@@ -142,11 +145,14 @@ class CameraViewModel(
   init {
     videoRecorder.setAudioInputHandler(audioInputHandler)
 
-    // Handyman: about once a second, while connected to the server and streaming, copy the
-    // current preview picture and send it as a JPEG frame (docs/protocol.md "frame").
+    // Handyman: while connected to the server and streaming, copy the current preview picture and
+    // send it as a JPEG frame (docs/protocol.md "frame"). The server sets the pace with "capture"
+    // (0.5 fps normally, 2 fps on risky steps); a "snap" sends one immediately.
     viewModelScope.launch(Dispatchers.Default) {
       while (isActive) {
-        delay(FRAME_INTERVAL_MS)
+        val intervalMs =
+            (1000.0 / server.state.value.captureFps).toLong().coerceIn(MIN_FRAME_INTERVAL_MS, MAX_FRAME_INTERVAL_MS)
+        withTimeoutOrNull(intervalMs) { server.snapRequests.receive() }
         if (!server.isConnected || !_uiState.value.isStreaming) continue
         val surface = decoderSurface ?: continue
         val jpeg =

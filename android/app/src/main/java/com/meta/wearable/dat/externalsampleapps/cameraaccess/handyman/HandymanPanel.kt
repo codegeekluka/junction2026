@@ -36,6 +36,8 @@ private val Good = Color(0xFF4ADE80)
 private val Warn = Color(0xFFFBBF24)
 private val Bad = Color(0xFFF87171)
 
+private fun fpsLabel(fps: Double) = if (fps % 1.0 == 0.0) fps.toInt().toString() else fps.toString()
+
 @Composable
 fun HandymanPanel(
     state: ServerUiState,
@@ -67,7 +69,7 @@ fun HandymanPanel(
       Text(label, color = Color.White, fontSize = 13.sp)
       Spacer(Modifier.weight(1f))
       Text(
-          if (isStreaming) "frames sent: ${state.framesSent}" else "start Preview to send frames",
+          if (isStreaming) "frames: ${state.framesSent} · ${fpsLabel(state.captureFps)} fps" else "start Preview to send frames",
           color = Color.White.copy(alpha = 0.7f),
           fontSize = 12.sp,
       )
@@ -90,6 +92,7 @@ fun HandymanPanel(
         )
         hud.verified?.let { Text("✓ $it", color = Good, fontSize = 13.sp) }
         if (hud.state == "mistake") hud.warning?.let { Text("⚠ $it", color = Bad, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+        if (hud.state == "unsure") Text("? ${hud.warning ?: "Show it from another angle"}", color = Warn, fontSize = 13.sp)
         if (hud.state == "cant_see") Text("Can't see clearly: move closer or add light", color = Warn, fontSize = 13.sp)
         hud.say?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp) }
       }
