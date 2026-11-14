@@ -189,17 +189,20 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
     }
   }
 
-  /** MEDIA if the glasses are connected as Bluetooth media (default); call mode only if asked. */
+  /**
+   * MEDIA always (default), unless USE_CALL_MODE: never put the glasses into call mode, because
+   * during a "call" the glasses show the call screen instead of our display. Media audio goes to
+   * the glasses if they're connected for media (A2DP), otherwise to the phone's speaker.
+   */
   private fun pickRoute(): VoiceRoute {
     val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-    val glassesMedia = outputs.any { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
-    if (glassesMedia && !USE_CALL_MODE) {
-      // Make sure no earlier call-mode routing is left over.
-      runCatching { audioManager.clearCommunicationDevice() }
-      audioManager.mode = AudioManager.MODE_NORMAL
-      return VoiceRoute.MEDIA
-    }
-    return routeToGlasses()
+    Log.i(TAG, "audio outputs: " + outputs.joinToString { "${it.productName}(type ${it.type})" })
+    if (USE_CALL_MODE) return routeToGlasses()
+    runCatching { audioManager.clearCommunicationDevice() } // drop any leftover call routing
+    audioManager.mode = AudioManager.MODE_NORMAL
+    val a2dp = outputs.any { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+    Log.i(TAG, if (a2dp) "media audio → glasses (A2DP)" else "no Bluetooth media device: coach plays on the phone speaker")
+    return VoiceRoute.MEDIA
   }
 
   /** Use the glasses as a Bluetooth headset if they're there; otherwise the phone. */
