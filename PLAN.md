@@ -99,20 +99,29 @@ calls tools               every 1–2 s, ~200 ms,       point/box + whether the 
 
 **Stack (proposal):** a Node.js backend (WebSocket relay + tools) using the `@google/genai` SDK, a plain web client for Plan B, and a DAT app on **Android (Kotlin)**, decided because the whole team is on Windows and iOS needs a Mac with Xcode. We need an Android phone for the demo. Secrets go in `.env`.
 
-### Build steps (work top to bottom; ✅ = demo-able checkpoint)
-| # | Step | Depends on | Parallel? |
+### Google booth advice (Sat): Decisions API as the brain
+- **A decision tree, one problem at a time.** Q1: "which problem is it, A/B/C?", then that problem's branch ("is the tap running?" …). Keep the whole tree ≤1,000 questions, so every check is one ~0.3–0.5 s call. **This tree is the expert know-how** (step 3).
+- **Route by confidence.** Simple, confident cases are handled by the tree. Low confidence or an unknown problem **escalates to Gemini Live** (reasoning, search). Live is expensive, so only use it when needed. That's the cost and scale story for the pitch.
+- **Show certainty to the user:** 🟢 ≥75% "very sure", 🟡 → "show me another angle", grey → unsure/escalate.
+- **Open question (team):** who speaks the simple steps? Either Live is always on as the voice (simplest for the demo), or the expert step text is spoken via TTS/ElevenLabs and Live joins only when needed (cheaper, and counts for ElevenLabs).
+
+### Build steps and status (update the Status column when you finish something)
+| # | Step | Owner | Status |
 |---|---|---|---|
-| 0 | Gemini API key + credits form. Probe scripts: send 3–5 photos of the real sink to Decision 1 and Robotics-ER 2. Measure latency and accuracy. | — | **A** |
-| 1 | Backend skeleton: WebSocket relay to Gemini Live, `.env`, health check | 0 (key) | **B** |
-| 2 | Web client: phone camera + mic → backend → voice reply ✅ *core loop* | 1 | B |
-| 3 | Repair plan (P-trap steps as JSON: checks, safety gates, phrasing) | — | **C** (designer + AI) |
-| 4 | Tools in Live: `check_step`, `safety_gate`, `locate` (wired to 0's modules) | 2, 3 | B |
-| 5 | Watcher loop + proactive interrupt ✅ *"stop, flip the washer"* | 4 | B |
-| 6 | Keyframe memory + `recall` + `handoff_report` | 4 | B |
-| 7 | Android DAT app: glasses camera/mic → same backend (mock device first) ✅ *on glasses* | 1 | **D** |
-| 8 | Robustness: disconnect fallback, network resume, dark/blurry, consent screen | 5, 7 | B + D |
-| 9 | Demo set: a real sink/trap at the venue, rehearse the 60-second flow, film | 5 | design |
-| — | **Feature freeze 22:00** | | |
+| 0 | Probe Decision 1 + Robotics-ER 2 (`probes/README.md`) | Luka | ✅ Decision ~0.5 s median, accurate. ER 2 accurate but 3–7 s → on-demand only |
+| 1 | Backend: WebSocket relay to Gemini Live (`server/`) | Luka | ✅ compression + session resumption + reconnect |
+| 2 | Web client: phone camera + mic → Live → voice (`web/`) ✅ *core loop* | Luka | ✅ first voice in ~0.6–0.8 s, describes P-trap photos correctly |
+| 2b | Watcher test: Decisions API on live frames + certainty panel (bottle / sink) | Luka | ✅ 0.3–0.5 s per answer. **Next: test on a real phone with a bottle** |
+| 3 | Repair **decision tree** (P-trap): problems → branches → checks, safety gates, phrasing | HVAC teammate + AI | ⬜ format TBD (`docs/repair-plan.md`) |
+| 4 | Tools in Live: `check_step`, `safety_gate`, `locate` | Luka | ⬜ |
+| 5 | Watcher walks the tree + low-confidence → Live ✅ *"stop, flip the washer"* | Luka | ⬜ |
+| 6 | Keyframe memory + `recall` + `handoff_report` | | ⬜ |
+| 7 | Android DAT app → same backend (mock device first) ✅ *on glasses* | teammate | ⬜ protocol: `docs/protocol.md` (TBD) |
+| 8 | Robustness: disconnect fallback, network resume, dark/blurry, consent | | ⬜ partly done in web client |
+| 9 | Demo set: real sink/trap, 60-second flow, film | design | ⬜ |
+| — | **Feature freeze 22:00**. Run `/challenge-check` at each ✅ milestone | | |
+
+**How to run:** `cd server && npm install && npm start` → http://localhost:8080 (laptop) or the printed `https://<ip>:8443` (phone on the same Wi-Fi; accept the certificate warning). Tests: `node --env-file=../.env scripts/smoke.js <img>`, `node scripts/watch-smoke.js <set> <img>` (server must be running).
 
 ## 5. Roles
 | Person | Owns | Tonight |

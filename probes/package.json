@@ -1,0 +1,15 @@
+{
+  "name": "junction-probes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Step-0 probe scripts for gemini-decision-1 and gemini-robotics-er-2-preview",
+  "scripts": {
+    "decision": "node decision.mjs images/samples",
+    "robotics": "node robotics.mjs images/samples"
+  },
+  "dependencies": {
+    "@google/genai": "^3.3.0",
+    "sharp": "^0.35.5"
+  }
+}
