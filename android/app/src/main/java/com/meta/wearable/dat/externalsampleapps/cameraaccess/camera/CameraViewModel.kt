@@ -45,6 +45,7 @@ import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.FrameGrabber
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.GlassesDisplay
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.ServerConnection
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.VoiceLink
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.AudioInputHandler
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.HevcDecoder
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.HevcParameterSetCollector
@@ -81,9 +82,6 @@ class CameraViewModel(
     private const val FRAME_RATE = 24
     private const val KEYFRAME_WAIT_STEP_MS = 25L
     private const val KEYFRAME_WAIT_MAX_MS = 500L
-    // Frame pacing bounds around the server's "capture" fps (0.5–2 fps in practice).
-    private const val MIN_FRAME_INTERVAL_MS = 250L
-    private const val MAX_FRAME_INTERVAL_MS = 4000L
   }
 
   private class RecorderFrame(
@@ -133,6 +131,11 @@ class CameraViewModel(
   // Handyman: link to our backend, plus the latest stream size for the frame grabber.
   val server = ServerConnection(viewModelScope)
   val glassesDisplay = GlassesDisplay(viewModelScope, server.state)
+
+  // Handyman Milestone 3: talk to the coach (glasses mic/speakers, or the phone as fallback).
+  val voice = VoiceLink(application) { pcm -> server.sendAudio(pcm) }
+  // "snap": the server wants a frame right now (user started talking / "done" verification).
+  private val snapRequests = Channel<Unit>(Channel.CONFLATED)
   @Volatile private var streamWidth = 0
   @Volatile private var streamHeight = 0
 
@@ -144,15 +147,17 @@ class CameraViewModel(
 
   init {
     videoRecorder.setAudioInputHandler(audioInputHandler)
+    server.onCoachAudio = voice::play
+    server.onInterrupted = voice::interrupt
+    server.onSnap = { snapRequests.trySend(Unit) }
 
-    // Handyman: while connected to the server and streaming, copy the current preview picture and
-    // send it as a JPEG frame (docs/protocol.md "frame"). The server sets the pace with "capture"
-    // (0.5 fps normally, 2 fps on risky steps); a "snap" sends one immediately.
+    // Handyman: while connected and streaming, copy the current preview picture and send it as a
+    // JPEG frame (docs/protocol.md "frame") at the rate the SERVER asks for ("capture": 0.5 fps
+    // normally, 2 fps on risky steps), plus one immediately on every "snap".
     viewModelScope.launch(Dispatchers.Default) {
       while (isActive) {
-        val intervalMs =
-            (1000.0 / server.state.value.captureFps).toLong().coerceIn(MIN_FRAME_INTERVAL_MS, MAX_FRAME_INTERVAL_MS)
-        withTimeoutOrNull(intervalMs) { server.snapRequests.receive() }
+        val intervalMs = (1000f / server.state.value.captureFps).toLong().coerceIn(250L, 5000L)
+        withTimeoutOrNull(intervalMs) { snapRequests.receive() } // wakes early on a snap
         if (!server.isConnected || !_uiState.value.isStreaming) continue
         val surface = decoderSurface ?: continue
         val jpeg =
@@ -727,8 +732,27 @@ class CameraViewModel(
     session?.stop()
   }
 
+  /** Handyman: start the voice coach (asks for the mic permission first). */
+  fun startCoach(requestRecordAudioPermission: suspend () -> Boolean) {
+    viewModelScope.launch {
+      if (!requestRecordAudioPermission()) {
+        server.reportError("Microphone permission is needed to talk to the coach.")
+        return@launch
+      }
+      server.startCoach()
+      if (!voice.start()) server.reportError("Couldn't open the microphone. Is another app using it?")
+    }
+  }
+
+  /** Handyman: stop the coach, the procedure and the voice. */
+  fun stopHandyman() {
+    voice.stop()
+    server.stop()
+  }
+
   override fun onCleared() {
     super.onCleared()
+    voice.stop()
     glassesDisplay.detach()
     server.stop()
     clearStreamResources()

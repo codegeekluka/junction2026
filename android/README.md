@@ -18,4 +18,16 @@ The server address is `ws://localhost:8080/live` (`handyman/ServerConnection.kt`
 - ✅ Milestone 1: connect to the server, start `bottle_demo`, send JPEG frames (copied from the decoded preview with PixelCopy), show `hud` + `decision`.
 - ✅ Milestone 2: text step card on the glasses display (`handyman/GlassesDisplay.kt`), redrawn on every `hud`; in-app preview + Chrome preview server for the mock Ray-Ban Display (`handyman/MockPreview.kt`, `GlassesPreview.kt`). Glasses without a display fall back to phone-only. (Chrome preview doesn't answer yet; the in-app preview works.)
 - 🟡 Milestone 2.5 (built, not yet tested): frame rate set by the server (`capture` 0.5/2 fps, `snap` = one frame now), 640 px / q60 frames, diagnosis + "unsure" card states.
-- ⬜ Milestone 3: voice in and out (`start` / `audio`).
+- 🟡 Milestone 3 (written by Luka on `android-voice`, merged into `android-app`; compiled, not yet tested):
+  - **"Talk to the coach"** button: asks for the mic permission, sends `start` (with the resume `handle` after a reconnect), streams the mic as 16 kHz PCM `audio` in 100 ms chunks, plays the coach's 24 kHz `audio`, and stops playback on `interrupted` (`handyman/VoiceLink.kt`).
+  - Audio goes through the **glasses as a Bluetooth headset (SCO)** when connected; otherwise (Mock Device Kit) through the **phone's mic and loudspeaker**, so the loop can be tested on the phone alone. `VOICE_COMMUNICATION` = echo cancellation.
+  - Frame rate now follows the server's **`capture`** message (0.5 fps normally, 2 fps on risky steps) and sends a frame immediately on **`snap`**. Frames are 640 px, quality 60.
+  - The panel shows the coach status ("Coach listening", "Reconnecting… progress kept") and the last thing you and the coach said.
+  - `hud` now carries **`card` / `cardUrl`** (the designers' cards). TODO: show the PNG on the glasses display in `GlassesDisplay.kt` (full URL = `server.httpBase + hud.cardUrl`; check whether the toolkit's image component needs https), falling back to the current text card.
+
+### Test Milestone 3
+1. Build and run as above (server running, `adb reverse tcp:8080 tcp:8080`).
+2. Start session → Preview → **Talk to the coach** → allow the microphone.
+3. Say **"Let's do the bottle practice"** and follow it with a real bottle. Try interrupting the coach mid-sentence: it should stop at once.
+4. Say **"Something's wrong with my bottle"** with the bottle lying down: it should diagnose it and offer the procedure.
+5. On real glasses: check the panel says the voice route is the glasses (Logcat tag `Handyman:Voice`: "voice started via GLASSES").
