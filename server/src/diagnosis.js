@@ -23,6 +23,15 @@ export const DIAGNOSES = {
           no_plumbing: 'No sink, tap or pipes are visible at all',
         },
       },
+      trap_type: {
+        label: 'Trap type', type: 'choice',
+        instructions: 'Which kind of drain trap is under this sink?',
+        criteria: {
+          bottle: 'A vertical cylinder (bottle shape) with a screw-off bottom cup, and a straight pipe going sideways into the wall',
+          u_pipe: 'A U-shaped curved pipe with a big nut on each side',
+          cant_tell: 'The pipework under the sink is not visible, or it is neither of these',
+        },
+      },
       water_under: { label: 'Water under the sink', type: 'noul',
         instructions: 'Is there water dripping from, or pooled underneath, the drain pipes under the sink?' },
       standing_water: { label: 'Standing water in basin', type: 'noul',
@@ -35,8 +44,9 @@ export const DIAGNOSES = {
         instructions: 'Is the image too dark or too blurry to judge what is in it?' },
     },
     branches: {
-      leaking_trap: { label: 'a leak at the drain trap', confirm: { q: 'water_under', min: 0.6 }, procedure: 'ptrap' },
-      slow_drain: { label: 'a slow or blocked drain', confirm: { q: 'standing_water', min: 0.6 }, procedure: 'ptrap' },
+      // procedure 'by_trap' → bottle_trap or ptrap from the trap_type answer (Finland: bottle by default)
+      leaking_trap: { label: 'a leak at the drain trap', confirm: { q: 'water_under', min: 0.6 }, procedure: 'by_trap' },
+      slow_drain: { label: 'a slow or blocked drain', confirm: { q: 'standing_water', min: 0.6 }, procedure: 'by_trap' },
       dripping_tap: { label: 'a dripping tap', confirm: { q: 'tap_dripping', min: 0.6 }, procedure: null },
       no_visible_problem: { label: 'no visible problem', procedure: null, nothingWrong: true },
       no_plumbing: { label: 'no plumbing in view', procedure: null, showMe: 'Point the camera at the sink and the pipes underneath.' },
