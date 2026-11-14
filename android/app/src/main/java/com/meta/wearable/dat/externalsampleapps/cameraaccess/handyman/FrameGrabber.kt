@@ -2,7 +2,8 @@
 //
 // The glasses stream compressed HEVC video, which Meta's sample already decodes onto the preview
 // Surface. Rather than decoding a second time, we copy the decoded picture off that Surface with
-// PixelCopy (scaled straight to the target width), then JPEG-encode it. Called about once a second.
+// PixelCopy (scaled straight to the target width), then JPEG-encode it. Called at the rate the
+// server asks for (0.5–2 fps) and on every "snap".
 
 package com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman
 
@@ -17,8 +18,8 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 object FrameGrabber {
-  const val TARGET_WIDTH = 768 // docs/protocol.md: ~768 px wide
-  private const val JPEG_QUALITY = 70 // ≈ 50–80 KB per frame
+  const val TARGET_WIDTH = 640 // docs/protocol.md: ~640 px wide (less upload on bad Wi-Fi)
+  private const val JPEG_QUALITY = 60 // ≈ 25–35 KB per frame
 
   private val copyThread = HandlerThread("Handyman:PixelCopy").apply { start() }
   private val copyHandler = Handler(copyThread.looper)

@@ -40,6 +40,7 @@ private val Bad = Color(0xFFF87171)
 fun HandymanPanel(
     state: ServerUiState,
     isStreaming: Boolean,
+    onStartCoach: () -> Unit,
     onStartBottle: () -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
@@ -113,16 +114,32 @@ fun HandymanPanel(
       )
     }
 
+    // Milestone 3: the conversation with the coach
+    if (state.coach != CoachState.OFF) {
+      val (color, label) =
+          when (state.coach) {
+            CoachState.LIVE -> Good to "Coach listening"
+            CoachState.CONNECTING -> Warn to "Coach connecting…"
+            CoachState.RECONNECTING -> Warn to "Connection lost. Reconnecting… (progress kept)"
+            CoachState.OFFLINE -> Bad to "Can't reach the coach"
+            CoachState.OFF -> Color.Gray to ""
+          }
+      Text("● $label", color = color, fontSize = 13.sp)
+      state.userLine?.let { Text("You: $it", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp) }
+      state.coachLine?.let { Text("Coach: $it", color = Color.White, fontSize = 14.sp) }
+    }
+
     state.lastError?.let { Text(it, color = Bad, fontSize = 12.sp) }
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      if (state.activeTask == null) {
+      if (state.activeTask == null && state.coach == CoachState.OFF) {
         Button(
-            onClick = onStartBottle,
+            onClick = onStartCoach,
             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
         ) {
-          Text("Start bottle practice")
+          Text("Talk to the coach")
         }
+        OutlinedButton(onClick = onStartBottle) { Text("Bottle practice (no voice)", color = Color.White) }
       } else {
         OutlinedButton(onClick = onStop) { Text("Stop", color = Color.White) }
       }

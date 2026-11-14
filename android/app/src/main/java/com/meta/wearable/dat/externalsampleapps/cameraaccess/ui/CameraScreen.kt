@@ -157,8 +157,9 @@ fun CameraScreen(
       HandymanPanel(
           state = serverUi,
           isStreaming = ui.isStreaming,
+          onStartCoach = { cameraViewModel.startCoach(onRequestRecordAudioPermission) },
           onStartBottle = { cameraViewModel.server.startTask("bottle_demo") },
-          onStop = { cameraViewModel.server.stop() },
+          onStop = { cameraViewModel.stopHandyman() },
       )
 
       // Handyman: live view of the simulated glasses display (mock Ray-Ban Display only).
