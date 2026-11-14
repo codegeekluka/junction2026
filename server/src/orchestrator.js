@@ -19,7 +19,10 @@ export function connect({ coach, watcher, send, log, recorder }) {
   const capturePolicy = () => {
     const step = runner && !runner.finished ? runner.step : null;
     const risky = Boolean(step && (step.gate || step.mistakes?.length));
-    const want = risky ? 2 : 0.5;
+    // CAPTURE_MODE=careful → 2 fps on every step (more corrections, more data);
+    // default "smart" → 2 fps only on risky steps. See docs/DECISIONS.md (smart capture).
+    const careful = process.env.CAPTURE_MODE === 'careful';
+    const want = risky || (careful && step) ? 2 : 0.5;
     if (want !== fps) {
       fps = want;
       send({ type: 'capture', fps, reason: risky ? `risky step: "${step.title}"` : step ? 'normal step' : 'no procedure running' });
