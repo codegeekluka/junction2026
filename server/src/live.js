@@ -30,7 +30,8 @@ export class CoachSession {
     await this.#connect();
   }
 
-  async #connect() {
+  /** @param {boolean} quiet  during automatic reconnects, don't alarm the user on each attempt */
+  async #connect(quiet = false) {
     const resuming = Boolean(this.handle);
     const gen = ++this.gen;
     this.send({ type: 'status', state: resuming ? 'reconnecting' : 'connecting' });
@@ -50,22 +51,23 @@ export class CoachSession {
         callbacks: {
           onopen: () => this.log(`[live] connected (${resuming ? 'resumed' : 'new'})`),
           onmessage: (m) => { if (gen === this.gen) this.#onMessage(m); },
-          onerror: (e) => {
-            this.log('[live] error', e?.message || e);
-            this.send({ type: 'error', message: 'Connection problem with the AI. Retrying…' });
-          },
+          onerror: (e) => this.log('[live] error', e?.message || e),
           onclose: (e) => { if (gen === this.gen) this.#onClose(e); },
         },
       });
       // 'live' is announced on setupComplete (input sent before that is dropped).
     } catch (err) {
       this.log('[live] connect failed', err?.message || err);
-      this.send({ type: 'error', message: isFatal(err)
-        ? `The AI service refused the connection (quota or API key). ${String(err?.message || err).slice(0, 160)}`
-        : 'Could not reach the AI. Check the internet connection.' });
-      this.send({ type: 'status', state: 'offline' });
+      if (!quiet || isFatal(err)) this.#reportFailure(err);
       throw err;
     }
+  }
+
+  #reportFailure(err) {
+    this.send({ type: 'error', message: isFatal(err)
+      ? `The AI service refused the connection (quota or API key). ${String(err?.message || err).slice(0, 160)}`
+      : 'Could not reach the AI. Check the internet connection.' });
+    this.send({ type: 'status', state: 'offline' });
   }
 
   #onMessage(m) {
@@ -112,15 +114,27 @@ export class CoachSession {
     this.session = null;
     this.gen++; // detach the old session's callbacks before closing it
     try { old?.close(); } catch {}
-    for (let attempt = 1; attempt <= 5 && !this.closedByClient; attempt++) {
+    // Network blips are common at the venue. Retry quietly. Google can take a few seconds
+    // to release the old connection ("already connected to an existing client"), so if
+    // resuming keeps failing, start a fresh session rather than giving up.
+    let lastErr;
+    let ok = false;
+    for (let attempt = 1; attempt <= 6 && !this.closedByClient; attempt++) {
+      if (attempt === 4 && this.handle) {
+        this.log('[live] resume keeps failing; starting a fresh session');
+        this.handle = null;
+      }
       try {
-        await this.#connect();
+        await this.#connect(true);
+        ok = true;
         break;
       } catch (err) {
+        lastErr = err;
         if (isFatal(err)) break; // quota / key / permission errors won't fix themselves
-        await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** attempt, 8000)));
+        await new Promise((r) => setTimeout(r, Math.min(1500 * attempt, 6000)));
       }
     }
+    if (!ok && !this.closedByClient && lastErr && !isFatal(lastErr)) this.#reportFailure(lastErr);
     this.reconnecting = false;
   }
 
