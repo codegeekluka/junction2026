@@ -26,6 +26,15 @@ const durS = decisions.length ? (decisions.at(-1).t - decisions[0].t) / 1000 : 0
 console.log(`Session ${path.basename(dir)} · set "${set}" · ${durS.toFixed(0)} s`);
 console.log(`Checks: ${ok.length} ok, ${errors.length} failed (${errors.map((e) => e.error).join(', ') || 'none'}) · ${(ok.length / Math.max(durS, 1)).toFixed(2)} checks/s`);
 console.log(`Latency ms: min ${ms[0] ?? '-'} · median ${pct(ms, 0.5)} · p90 ${pct(ms, 0.9)} · max ${ms.at(-1) ?? '-'}`);
+const srv = ok.filter((d) => d.serverMs).map((d) => d.serverMs).sort((a, b) => a - b);
+const net = ok.filter((d) => d.serverMs).map((d) => d.ms - d.serverMs).sort((a, b) => a - b);
+if (srv.length) console.log(`  of which Google processing: median ${pct(srv, 0.5)} · p90 ${pct(srv, 0.9)} · max ${srv.at(-1)}  |  network: median ${pct(net, 0.5)} · p90 ${pct(net, 0.9)} · max ${net.at(-1)}`);
+const pings = errors.filter((e) => e.pingMs !== undefined).map((e) => e.pingMs);
+if (pings.length) {
+  const slowNet = pings.filter((p) => p < 0 || p > 1000).length;
+  console.log(`  timeouts: network check right after each: ${pings.map((p) => (p < 0 ? 'FAIL' : p + 'ms')).join(', ')}`);
+  console.log(`  → ${slowNet}/${pings.length} timeouts look like the network (Wi-Fi); ${pings.length - slowNet}/${pings.length} look like Google being slow`);
+}
 
 if (head) {
   const seq = ok.map((d) => d.headline ?? d.answers?.[head]).filter(Boolean);

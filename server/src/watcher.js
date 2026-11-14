@@ -6,10 +6,8 @@
 // Lessons from probes/README.md: api_version v1beta is required, SDK auto-retries must be
 // off, and a hard AbortSignal timeout is needed (one call once hung for 590 s).
 
-import { GoogleGenAI } from '@google/genai';
 import { QUESTION_SETS, HEADLINES, QUALITY_QUESTION } from './questions.js';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL = 'gemini-decision-1';
 const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 1000);
 const TIMEOUT_MS = 3000;
@@ -55,18 +53,18 @@ export class Watcher {
     const frame = this.frame;
     const t0 = performance.now();
     try {
-      const res = await ai.decisions.create({
-        api_version: 'v1beta',
+      const { res, serverMs } = await callDecisions({
         model: MODEL,
         input: [{ type: 'image', data: frame, mime_type: 'image/jpeg', resolution: 'low' }],
         questions: toApi(QUESTION_SETS[this.setName]),
-      }, { retries: { strategy: 'none' }, fetch_options: { signal: AbortSignal.timeout(TIMEOUT_MS) } });
+      });
       if (!this.timer) return; // stopped while waiting
       const msg = {
         type: 'decision',
         set: this.setName,
         ms: Math.round(performance.now() - t0),
         stale: this.frameSeq - seq, // frames that arrived while we waited
+        serverMs,                   // Google's own processing time (server-timing header)
         answers: res.answers,
         headline: headline(this.setName, res.answers),
       };
@@ -80,6 +78,8 @@ export class Watcher {
       const msg = { type: 'decision', set: this.setName, error: timedOut ? 'timeout' : 'failed',
         ms: Math.round(performance.now() - t0) };
       this.send(msg);
+      // Was it the network? Ping Google right now: fast ping => the slowness was Google's side.
+      msg.pingMs = await pingGoogle();
       this.recorder?.decision(msg);
     } finally {
       this.busy = false;
@@ -102,6 +102,29 @@ export class Watcher {
     this.stop();
     this.frame = null;
   }
+}
+
+// Direct REST call (instead of the SDK) so we can read Google's server-timing header.
+async function callDecisions(body) {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/decisions', {
+    method: 'POST',
+    headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  const serverMs = Number(r.headers.get('server-timing')?.match(/dur=([\d.]+)/)?.[1]) || undefined;
+  const res = await r.json();
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${res.error?.message ?? JSON.stringify(res).slice(0, 200)}`);
+  return { res, serverMs: serverMs && Math.round(serverMs) };
+}
+
+// Round trip to Google's front door, without any model work (ms, or -1 if it failed too).
+async function pingGoogle() {
+  const t0 = performance.now();
+  try {
+    await fetch('https://generativelanguage.googleapis.com/', { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+    return Math.round(performance.now() - t0);
+  } catch { return -1; }
 }
 
 // Combine answers into the one verdict the user sees (a tiny decision tree):

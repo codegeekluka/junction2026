@@ -39,7 +39,7 @@ export class Recorder {
     if (!this.enabled) return;
     const n = ++this.n;
     const frame = ALL_FRAMES && frameB64 ? this.#saveFrame(frameB64, `d${String(n).padStart(4, '0')}`) : undefined;
-    this.#write({ ev: 'decision', n, set: msg.set, ms: msg.ms, error: msg.error, stale: msg.stale, answers: msg.answers, headline: msg.headline, frame });
+    this.#write({ ev: 'decision', n, set: msg.set, ms: msg.ms, serverMs: msg.serverMs, pingMs: msg.pingMs, error: msg.error, stale: msg.stale, answers: msg.answers, headline: msg.headline, frame });
   }
   feedback(fb, lastDecision, frameB64) {
     if (!this.enabled) return;
