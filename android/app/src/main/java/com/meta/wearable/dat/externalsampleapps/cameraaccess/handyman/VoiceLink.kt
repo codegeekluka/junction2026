@@ -112,8 +112,8 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
     running = true
     rec.startRecording()
     trk.play()
-    micThread = Thread(::micLoop, "Handyman:Mic").apply { start() }
-    speakerThread = Thread(::speakerLoop, "Handyman:Speaker").apply { start() }
+    micThread = Thread({ micLoop() }, "Handyman:Mic").apply { start() }
+    speakerThread = Thread({ speakerLoop() }, "Handyman:Speaker").apply { start() }
     Log.i(TAG, "voice started via ${_route.value}")
     return true
   }
