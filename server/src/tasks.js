@@ -9,7 +9,8 @@
 //     id, title,             short name shown on the display ("Bucket under the trap")
 //     say,                   what the coach tells the user to do
 //     done: { q, min } | { q, is, min }   must be seen in 2 checks in a row to advance
-//     mistakes: [{ id, q, is?, min, say }] warnings the coach gives immediately
+//     mistakes: [{ id, q, is?, min, say, card? }] warnings the coach gives immediately
+//     card                   glasses display card id (design/glasses-ui), e.g. 'step-2-bucket'
 //     gate: true             safety step: can't be skipped
 //   }]
 //   quality: question id for "too dark/blurry" (pauses checking + asks for light)
@@ -21,6 +22,7 @@ export const TASKS = {
   // Test procedure you can run at a desk: proves the watcher → voice loop works.
   bottle_demo: {
     title: 'Bottle practice (test procedure)',
+    cards: { done: 'correct', look: 'look-down', mistake: 'careful' },
     match: 'testing, practice, demo with a bottle',
     quality: 'image_quality',
     questions: {
@@ -61,12 +63,18 @@ export const TASKS = {
     ],
   },
 
-  // DRAFT, not yet expert-reviewed: replace with the HVAC teammate's procedure.
+  // DRAFT, not yet expert-reviewed: replace/confirm with the HVAC teammate.
+  // Steps match the designers' display cards (design/glasses-ui: step-1-stopper … step-6-water).
   ptrap: {
-    title: 'Clear or re-seat a sink drain trap (P-trap)',
-    match: 'sink draining slowly, blocked sink, smelly sink, leaking drain pipe under the sink, P-trap',
+    title: 'Unclog a sink (clean the drain trap)',
+    match: 'sink draining slowly, blocked or clogged sink, smelly sink, leaking drain pipe under the sink, P-trap',
     quality: 'image_quality',
+    cards: { done: 'drain-clear', look: 'look-down', mistake: 'careful' },
     questions: {
+      stopper_out: {
+        label: 'Stopper out', type: 'noul',
+        instructions: 'Is the sink drain open, with the plug/stopper pulled out of the drain hole (or held in a hand)?',
+      },
       trap_visible: {
         label: 'Trap in view', type: 'noul',
         instructions: 'Is the curved U-shaped drain pipe (P-trap) under a sink clearly visible?',
@@ -75,17 +83,25 @@ export const TASKS = {
         label: 'Bucket under the trap', type: 'noul',
         instructions: 'Is there a bucket, bowl or container directly under the curved U-shaped drain pipe, positioned to catch water?',
       },
-      trap_attached: {
-        label: 'Trap attached', type: 'noul',
-        instructions: 'Is the curved U-shaped drain pipe connected to the pipes on both ends (not removed)?',
-      },
       trap_removed: {
         label: 'Trap removed', type: 'noul',
         instructions: 'Has the curved U-shaped drain pipe been taken off, e.g. held in a hand or lying in a bucket, with a gap where it was?',
       },
-      water_running: {
-        label: 'Tap running', type: 'noul',
-        instructions: 'Is water running from the tap into the sink?',
+      trap_rinsing: {
+        label: 'Trap being emptied/rinsed', type: 'noul',
+        instructions: 'Is a removed U-shaped drain pipe being emptied or rinsed (held over a bucket or under running water), or is it visibly clean inside?',
+      },
+      trap_attached: {
+        label: 'Trap attached', type: 'noul',
+        instructions: 'Is the curved U-shaped drain pipe connected to the pipes on both ends (not removed)?',
+      },
+      water_draining: {
+        label: 'Water running and draining', type: 'noul',
+        instructions: 'Is water running from the tap into the sink and draining away (not standing in the basin)?',
+      },
+      standing_water: {
+        label: 'Standing water', type: 'noul',
+        instructions: 'Is there standing water filling the sink basin?',
       },
       drips: {
         label: 'Drips at joints', type: 'noul',
@@ -97,18 +113,31 @@ export const TASKS = {
       },
     },
     steps: [
-      { id: 'find', title: 'Find the trap', say: 'Open the cabinet and look at the pipes under the sink. I’m looking for the U-shaped pipe.',
-        done: { q: 'trap_visible', min: 0.75 } },
-      { id: 'bucket', title: 'Bucket under the trap', gate: true, say: 'Put a bucket or bowl right under the U-shaped pipe. There’s water in it.',
+      { id: 'stopper', card: 'step-1-stopper', title: 'Pull the stopper',
+        say: 'First: have you poured any drain cleaner in today? If you have, don’t open the pipe, it can burn. If not, pull the stopper straight up and out of the drain.',
+        done: { q: 'stopper_out', min: 0.75 } },
+      { id: 'bucket', card: 'step-2-bucket', title: 'Bucket under the pipe', gate: true,
+        say: 'Put a bucket right under the U-shaped pipe. There’s water in it.',
         done: { q: 'bucket_under_trap', min: 0.75 } },
-      { id: 'remove', title: 'Loosen the nuts and remove the trap', say: 'Unscrew the two big plastic nuts by hand, anticlockwise, and lower the U-pipe into the bucket.',
+      { id: 'unscrew', card: 'step-3-unscrew', title: 'Unscrew by hand',
+        say: 'Turn both big nuts to the left, by hand, and lower the U-pipe into the bucket.',
         done: { q: 'trap_removed', min: 0.75 },
-        mistakes: [{ id: 'no_bucket', q: 'bucket_under_trap', is: false, min: 0.8, say: 'Stop. There’s no bucket under the pipe. Put it back before you loosen anything.' }] },
-      { id: 'refit', title: 'Clean and refit the trap', say: 'Clean it out, then screw it back on. Washers flat side to the nut. Hand-tight plus a quarter turn.',
+        mistakes: [{ id: 'no_bucket', card: 'careful', q: 'bucket_under_trap', is: false, min: 0.8,
+          say: 'Stop. There’s no bucket under the pipe. Put it back before you loosen anything, the water will spill.' }] },
+      { id: 'rinse', card: 'step-4-rinse', title: 'Empty and rinse',
+        say: 'Empty the pipe into the bucket and rinse it out. Check the washers are still in the nuts.',
+        done: { q: 'trap_rinsing', min: 0.75 } },
+      { id: 'refit', card: 'step-5-refit', title: 'Screw back on',
+        say: 'Screw the pipe back on, hand-tight. Flat side of each washer towards the nut.',
         done: { q: 'trap_attached', min: 0.75 } },
-      { id: 'test', title: 'Run water and check for drips', say: 'Run the tap for ten seconds while I watch the joints for drips.',
-        done: { q: 'water_running', min: 0.75 },
-        mistakes: [{ id: 'leak', q: 'drips', min: 0.75, say: 'I can see a drip at a joint. Turn the tap off and tighten that nut a quarter turn.' }] },
+      { id: 'water', card: 'step-6-water', title: 'Run the water',
+        say: 'Run the tap for a few seconds while I watch the pipe for drips.',
+        done: { q: 'water_draining', min: 0.75 },
+        mistakes: [
+          { id: 'leak', card: 'careful', q: 'drips', min: 0.75, say: 'I can see a drip at a joint. Turn the tap off and tighten that nut a quarter turn by hand.' },
+          { id: 'still_blocked', card: 'stop-water', q: 'standing_water', min: 0.8,
+            say: 'Turn the tap off. The water isn’t draining, so the blockage is further down, in the building’s drain. That’s a job for a plumber.' },
+        ] },
     ],
   },
 };

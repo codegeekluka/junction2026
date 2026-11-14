@@ -9,6 +9,7 @@ import { TaskRunner } from './task-runner.js';
 import { TASKS } from './tasks.js';
 import { DiagnosisRunner } from './diagnosis-runner.js';
 import { DIAGNOSES } from './diagnosis.js';
+import { cardFields } from './cards.js';
 
 export function connect({ coach, watcher, send, log, recorder }) {
   let runner = null;   // expert procedure (TaskRunner)
@@ -38,12 +39,34 @@ export function connect({ coach, watcher, send, log, recorder }) {
   // User started talking: Live should see what they see right now.
   coach.onUserSpeech = () => { coach.forceFrame = true; snap(1); };
 
+  // Which designer card (design/glasses-ui) to show for a procedure state.
+  let hudSeq = 0;
+  const defaultCard = (state) => {
+    const cards = runner?.task.cards ?? {};
+    if (state === 'doing') return runner?.step?.card;
+    if (state === 'finished') return cards.done ?? 'correct';
+    if (state === 'mistake') return cards.mistake ?? 'careful';
+    if (state === 'cant_see' || state === 'unsure') return cards.look ?? 'look-down';
+    if (state === 'stopped') return 'ready';
+    return null;
+  };
+
   const hud = (state, extra = {}) => {
     capturePolicy();
+    hudSeq++;
     const s = runner?.status();
+    const { card, ...rest } = extra;
     send({ type: 'hud', state, task: s?.title ?? null,
       step: s?.step ? `${s.step.n}/${s.step.of}` : null, title: s?.step?.title ?? null,
-      say: s?.step?.say ?? null, gate: s?.step?.gate ?? false, ...extra });
+      say: s?.step?.say ?? null, gate: s?.step?.gate ?? false, ...rest,
+      ...cardFields(card ?? defaultCard(state)) });
+  };
+
+  // A step was verified: flash the ✓ card, then show the next step's card.
+  const hudVerified = (verified) => {
+    hud('doing', { verified, card: 'correct' });
+    const seq = hudSeq;
+    setTimeout(() => { if (seq === hudSeq && runner && !runner.finished) hud('doing', { verified }); }, 1500);
   };
 
   // ---- Inspector → voice ----
@@ -74,13 +97,14 @@ export function connect({ coach, watcher, send, log, recorder }) {
       recorder?.coach({ kind: e.kind });
       if (e.kind === 'advance' || e.kind === 'finished') {
         verified.push(e.from.title);
-        hud(e.kind === 'finished' ? 'finished' : 'doing', { verified: e.from.title });
+        if (e.kind === 'finished') hud('finished', { verified: e.from.title });
+        else hudVerified(e.from.title);
         clearTimeout(timer);
         timer = setTimeout(flush, BATCH_MS);
       } else if (e.kind === 'mistake') {
         verified = []; clearTimeout(timer); timer = null; // a warning beats stale "well done" news
         coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
-        hud('mistake', { warning: e.say });
+        hud('mistake', { warning: e.say, card: e.card });
       } else if (e.kind === 'cant_see') {
         coach.notify('The camera view is too dark or blurry to check this. Ask them to move closer or add light.');
         hud('cant_see');
@@ -98,18 +122,18 @@ export function connect({ coach, watcher, send, log, recorder }) {
           const t = TASKS[e.procedure];
           coach.notify(`Diagnosis verified on camera: ${e.label} (${p}% sure). An expert-verified procedure exists: "${t.title}" (id ${e.procedure}, ${t.steps.length} steps). ` +
             `Tell the user what you see in one sentence and ask if they want to fix it together. If yes, call start_task with "${e.procedure}".`);
-          diagHud('diagnosed', `Looks like ${e.label}`, `Expert procedure available: ${t.title}`);
+          diagHud('diagnosed', `Looks like ${e.label}`, `Expert procedure available: ${t.title}`, 'confirm');
         } else if (e.nothingWrong) {
           coach.notify(`Diagnosis: ${e.label} (${p}% sure). Tell the user nothing looks wrong from here, and ask what they noticed (sound, smell, drip, when it happens).`);
-          diagHud('diagnosed', 'Nothing visibly wrong', 'Tell me what you noticed');
+          diagHud('diagnosed', 'Nothing visibly wrong', 'Tell me what you noticed', 'thinking');
         } else if (e.showMe) {
           coach.notify(`The inspector can't see the problem area: ${e.label}. Ask the user: ${e.showMe} Then call diagnose again.`);
-          diagHud('unsure', 'Show me the problem', e.showMe);
+          diagHud('unsure', 'Show me the problem', e.showMe, 'look-down');
         } else {
           // ESCALATION: known problem, but no expert procedure yet → Live's own knowledge, flagged.
           coach.notify(`Diagnosis: ${e.label} (${p}% sure). There is NO expert-verified procedure for this yet. ` +
             'Help with your own knowledge if it is a simple, safe fix, say clearly that this advice is not expert-verified, and suggest a professional otherwise.');
-          diagHud('diagnosed', `Looks like ${e.label}`, 'No expert procedure yet: general advice only');
+          diagHud('diagnosed', `Looks like ${e.label}`, 'No expert procedure yet: general advice only', 'thinking');
         }
       } else if (e.kind === 'escalate') {
         // ESCALATION: the fast inspector isn't sure → hand over to the reasoning model.
@@ -117,20 +141,21 @@ export function connect({ coach, watcher, send, log, recorder }) {
         capturePolicy();
         coach.notify(`The inspector is not sure what the problem is (${e.why}). Use your own judgement: look at the image, ` +
           'and ask the user ONE short clarifying question or for a better view. Then call diagnose again if useful.');
-        diagHud('unsure', 'Not sure yet', 'Asking you a question to narrow it down');
+        diagHud('unsure', 'Not sure yet', 'Asking you a question to narrow it down', 'look-down');
       } else if (e.kind === 'hazard') {
         diag = null;
         capturePolicy();
         coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
-        diagHud('mistake', 'Stop: hazard', e.say);
+        diagHud('mistake', 'Stop: hazard', e.say, 'careful');
       }
     }
   };
 
-  const diagHud = (state, title, say) => {
+  const diagHud = (state, title, say, card) => {
     capturePolicy();
+    hudSeq++;
     send({ type: 'hud', state, task: 'Diagnosis', step: null, title, say, gate: false,
-      ...(state === 'mistake' ? { warning: say } : {}) });
+      ...(state === 'mistake' ? { warning: say } : {}), ...cardFields(card) });
   };
 
   // ---- Voice → tools ----
@@ -142,7 +167,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
         runner = null;
         diag = new DiagnosisRunner(id);
         watcher.startTask(diag);
-        diagHud('diagnosing', 'Taking a look…', 'Hold the camera steady on the problem');
+        diagHud('diagnosing', 'Taking a look…', 'Hold the camera steady on the problem', 'scanning');
         snap(2);
         return { ok: true, looking_at: DIAGNOSES[id].title,
           note: 'Say you are taking a look (one short sentence). The result arrives as an [INSPECTOR] message within a few seconds. Do not guess before it.' };

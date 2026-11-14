@@ -82,7 +82,7 @@ const engines = {
     const el = $('eng-insp');
     el.dataset.on = msg.state === 'on';
     el.querySelector('.st').textContent = msg.state === 'on'
-      ? `checking ${Object.keys(msg.questions).filter((k) => !k.startsWith('__')).length} questions per frame, about once a second`
+      ? `checking ${Object.keys(msg.questions).filter((k) => !k.startsWith('__')).length} questions per frame`
       : 'off (starts when an expert procedure runs)';
   },
   check(msg) {
@@ -159,6 +159,10 @@ function renderHud(h) {
   if (h.state === 'stopped') { card.hidden = true; return; }
   card.hidden = false;
   card.dataset.state = h.state;
+  // The designers' glasses card (same image the Ray-Ban Display shows), on black = see-through.
+  const img = $('hud-card');
+  if (h.cardUrl) { if (!img.src.endsWith(h.cardUrl)) img.src = h.cardUrl; img.alt = h.card; img.hidden = false; }
+  else img.hidden = true;
   $('hud-task').textContent = h.task ?? '';
   $('hud-step').textContent = h.state === 'finished' ? '✓' : h.step ? `Step ${h.step}` : '';
   $('hud-title').textContent = h.state === 'finished' ? 'Job done' : (h.title ?? '');
@@ -378,3 +382,7 @@ addEventListener('offline', () => running && setStatus('offline', 'No internet: 
 
 // Demo/testing: show the judges how a dropped connection is handled.
 $('sim-drop').onclick = () => sendMsg({ type: 'simulate_drop' });
+
+// Debug: start a procedure / diagnosis without speaking (testing the inspector + display cards).
+document.querySelectorAll('[data-task]').forEach((b) => (b.onclick = () => sendMsg({ type: 'task', task: b.dataset.task })));
+document.querySelectorAll('[data-diagnose]').forEach((b) => (b.onclick = () => sendMsg({ type: 'diagnose', area: b.dataset.diagnose })));

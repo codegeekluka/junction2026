@@ -31,6 +31,7 @@
     </section>
 
     <section id="hud" aria-live="polite" hidden>
+      <img id="hud-card" alt="" width="120" height="120" hidden />
       <p class="hud-task" id="hud-task"></p>
       <p class="hud-step"><span id="hud-step"></span> <span id="hud-title"></span></p>
       <p class="hud-say" id="hud-say"></p>
@@ -83,6 +84,9 @@
       <summary>Debug</summary>
       <p>Frames sent: <span id="frames">0</span> · Rate: <span id="fps">0.5</span> fps (set by server) · Upload: <span id="upload">–</span> KB/min · Source: <span id="source">phone camera</span></p>
       <button type="button" id="sim-drop">Simulate connection drop</button>
+      <button type="button" data-task="bottle_demo">Start bottle practice</button>
+      <button type="button" data-task="ptrap">Start sink procedure</button>
+      <button type="button" data-diagnose="sink">Diagnose sink</button>
     </details>
   </main>
   <script type="module" src="app.js"></script>

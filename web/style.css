@@ -96,3 +96,8 @@ body.running.watching .viewport { aspect-ratio: 16 / 9; }
 #hud[data-state="diagnosed"] { border-left-color: #5ad17a; }
 #hud[data-state="unsure"] { border-left-color: #ffd23f; }
 #hud[data-state="unsure"] .hud-note { color: #ffd23f; }
+
+/* Glasses display card inside the step card */
+#hud { grid-template-columns: 1fr; }
+#hud:has(#hud-card:not([hidden])) { grid-template-columns: 120px 1fr; column-gap: 14px; }
+#hud-card { grid-row: 1 / span 4; width: 120px; height: 120px; border-radius: 12px; background: #000; align-self: center; }
