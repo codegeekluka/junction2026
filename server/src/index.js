@@ -29,6 +29,14 @@ const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 
 const app = express();
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Demo/testing: simulate a network drop on EVERY live session (incl. the glasses app), to show
+// the judges how connectivity loss is handled. Open http://localhost:8080/debug/drop in a browser.
+const liveCoaches = new Set();
+app.get('/debug/drop', (_req, res) => {
+  for (const c of liveCoaches) c.simulateDrop();
+  res.type('text').send(`Simulated a connection drop on ${liveCoaches.size} session(s).`);
+});
 app.use(express.static(webDir));
 app.use('/cards', express.static(CARDS_DIR, { maxAge: '1h' })); // designers' glasses display cards
 
@@ -49,6 +57,7 @@ function attachLive(server) {
       if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
     };
     const coach = new CoachSession(send, log);
+    liveCoaches.add(coach);
     const watcher = new Watcher(send, log, recorder);
     const orch = connect({ coach, watcher, send, log, recorder });
 
@@ -85,6 +94,7 @@ function attachLive(server) {
       };
       log('usage', JSON.stringify(stats));
       if (usage.frames) recorder.stats(stats);
+      liveCoaches.delete(coach);
       coach.close(); watcher.close();
       const saved = audio.finish();
       if (saved) log('audio + transcript saved to', saved);
