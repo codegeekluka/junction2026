@@ -9,7 +9,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 | Meta: Creativity & use case | D1, D2, D16 |
 | Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14, D20 |
 | Meta: Real-world value & feasibility | D1, D16, D17 |
-| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19 |
+| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19, D21 |
 | Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
 
 ---
@@ -142,3 +142,10 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - **Evidence (end-to-end, real Gemini):** pick-up verified 1.2 s after it happened; mistake caught 1.3 s after the wrong move; inspector 1.7 checks/s, median 0.29 s; an already-standing bottle no longer skipped step 1.
 - **Pitch line:** we tuned it on real use: fast enough to keep up, strict enough not to be fooled.
 - **Criterion:** Technical execution (performance trade-offs), Trust.
+
+### D21 · The display must answer 4 questions at a glance (Sat evening)
+- **Why:** testing showed the card icon + step number wasn't enough to understand *how* to do a step; the how was only spoken.
+- **The 4 questions:** Where am I? (`step`, progress) · What do I do? (**`short`**, ≤ 6 words) · What does right look like? (card / tip, later a live cutout of the real part) · Is it working? (**`status`**: Watching… / ✓ Done / ⚠ Stop).
+- **Inclusive:** the voice says the long version; the display is a glanceable confirmation, so it works for people who can't read the display well (audio) and in noisy places (display).
+- **Criterion:** Meta UX & accessibility.
+- **Knowledge pack (in progress):** a sourced sink-drain knowledge pack (manufacturer guides; both bottle traps, common in Finland, and P-traps) to rewrite the procedure, checks and mistakes and to give the coach background knowledge. Context-stuffing, not RAG, for one job; for many appliances: Gemini File Search over manuals (roadmap).

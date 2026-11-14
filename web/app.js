@@ -166,6 +166,11 @@ function renderHud(h) {
   $('hud-task').textContent = h.task ?? '';
   $('hud-step').textContent = h.state === 'finished' ? '✓' : h.step ? `Step ${h.step}` : '';
   $('hud-title').textContent = h.state === 'finished' ? 'Job done' : (h.title ?? '');
+  // Glance layout (same fields as the glasses display): short instruction, tip, status line.
+  $('hud-short').textContent = h.state === 'finished' ? '' : (h.short ?? '');
+  $('hud-tip').textContent = h.state === 'finished' ? '' : (h.tip ?? '');
+  $('hud-status').textContent = h.status ?? '';
+  $('hud-status').dataset.state = h.state;
   $('hud-say').textContent = h.state === 'finished' ? '' : (h.say ?? '');
   const note = $('hud-note');
   note.className = 'hud-note';
