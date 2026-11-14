@@ -82,10 +82,8 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
   - **Our differentiator is expert know-how that Meta won't build.** That means expert-verified repair procedures, a coach that checks your work, safety stops, and handing off to a real professional, all running on the glasses' video and the Gemini Decisions API.
   - **"Why would anyone trust it?"** Our credibility comes from real trades and HVAC expertise. Show it in the product: the steps come from experts and are not improvised, it says when it's unsure, it has safety gates, and it escalates to a professional.
   - **Feedback must be fast enough to be usable.** Measure the loop latency and quote the number in the pitch.
-- Pipeline: **three Gemini models**:
-  - **Gemini Live:** the voice
-  - **Gemini Decision 1 / Decisions API:** the watcher, running continuous yes/no step checks
-  - **Gemini Robotics-ER 2:** the pointer, giving spatial locations
+- Pipeline (current, see `docs/DECISIONS.md` D5/D18): **Gemini Live** = the voice; **Gemini Decision 1 (Decisions API)** = the inspector (diagnosis tree + verifies every step, unsure cases escalate to Live). Robotics-ER 2 was tested but is too slow for the live loop (3–7 s): planned only for an on-demand "which part?" cutout on the display.
+- **Code:** `server/` (the brain), `web/` (test client + backup demo), `android-app` / `android-voice` branches (glasses app), `design/glasses-ui` (display cards). Protocol: `docs/protocol.md`.
 - Full architecture and build steps: `PLAN.md` §3–4. The sections below are earlier brainstorming.
 
 ## Use-case direction (earlier brainstorm, superseded)
