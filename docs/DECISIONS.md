@@ -8,7 +8,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 |---|---|
 | Meta: Creativity & use case | D1, D2, D16 |
 | Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14, D20 |
-| Meta: Real-world value & feasibility | D1, D16, D17 |
+| Meta: Real-world value & feasibility | D1, D16, D17, D22 |
 | Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19, D21 |
 | Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
 
@@ -149,3 +149,11 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - **Inclusive:** the voice says the long version; the display is a glanceable confirmation, so it works for people who can't read the display well (audio) and in noisy places (display).
 - **Criterion:** Meta UX & accessibility.
 - **Knowledge pack (in progress):** a sourced sink-drain knowledge pack (manufacturer guides; both bottle traps, common in Finland, and P-traps) to rewrite the procedure, checks and mistakes and to give the coach background knowledge. Context-stuffing, not RAG, for one job; for many appliances: Gemini File Search over manuals (roadmap).
+
+### D22 · Bottle-trap procedure + knowledge pack in the coach (Sat night)
+- **Why:** our demo sink (a Finnish bathroom basin) has a **bottle trap**, not the U-pipe our draft assumed; the knowledge pack (docs/knowledge/sink-drain.md, 21 sources) says that's typical in Finnish bathrooms.
+- **What:** new `bottle_trap` procedure (7 steps, from Hansgrohe's cleaning instructions + guides): stopper → bucket (safety step) → hold the body & unscrew the cup → clean → rubber ring seated → cup back on straight, hand-tight → run the water. Mistakes: no bucket, spilling, cracked/corroded parts, pliers on plastic, ring twisted, cup crooked, drip, still blocked (→ housing company / plumber).
+- **Diagnosis picks the procedure** from the trap type it sees (bottle vs U-pipe; bottle by default in Finland).
+- **The whole knowledge pack goes into the coach's instructions** (one job's knowledge fits; no RAG needed). Tested: "why hold the trap body?" → the sourced reason; "I live in an apartment" → mentions the housing company.
+- **Pilot insight:** since 2019 Kiinteistöliitto says sink-trap cleaning in apartment buildings is the housing company's job, because badly refitted traps cause water damage → housing companies and maintenance firms (like our HVAC business) are a natural pilot customer.
+- **Criterion:** Real-world value & feasibility, Trust.
