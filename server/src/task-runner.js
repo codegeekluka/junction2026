@@ -59,7 +59,7 @@ export class TaskRunner {
     for (const m of step.mistakes ?? []) {
       const p = checkP(m, answers);
       if (p >= m.min) {
-        if (this.#bump(`m:${m.id}`) >= CONSECUTIVE && this.#cool(m.id)) events.push({ kind: 'mistake', id: m.id, say: m.say, p });
+        if (this.#bump(`m:${m.id}`) >= CONSECUTIVE && this.#cool(m.id)) events.push({ kind: 'mistake', id: m.id, say: m.say, p, card: m.card });
         return { events, headline: { choice: 'mistake', confidence: p } };
       }
       this.streak[`m:${m.id}`] = 0;

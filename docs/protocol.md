@@ -54,6 +54,11 @@ Sent when an expert procedure starts, a step is verified, a mistake is spotted, 
 | `gate` | `true` | Safety step: can't be skipped, must be verified on camera |
 | `verified` | `"Find the trap"` | The step that was just confirmed on camera → show a ✓ briefly |
 | `warning` | `"Stop. There's no bucket under the pipe."` | Only with `state: "mistake"` → show prominently (red / ⚠) |
+| **`card`** | `"step-2-bucket"` | **Which designer card to show** (`design/glasses-ui`). Missing → fall back to the text fields. |
+| **`cardUrl`** | `"/cards/12-step-2-bucket.png"` | The card image on our server (1200×1200 PNG, transparent → scale to 600×600 on black). Full URL = server base + this path, e.g. `http://localhost:8080/cards/12-step-2-bucket.png`. |
+
+**Cards the server sends:** the step's own card (`step-1-stopper` … `step-6-water` for the sink), `correct` for 1.5 s whenever a step is verified, `careful` / `stop-water` for warnings, `look-down` when it can't see or isn't sure, `drain-clear` when the job is done, `scanning` while diagnosing, `confirm` when it offers a procedure, `ready` when stopped.
+**Cards the app picks itself** (device events the server can't see; see `design/glasses-ui/README.md`): `offline` (status reconnecting/offline), `listening` (user speaking), `low-battery`, `cooling`, `paused` (glasses taken off), `all-off`.
 
 Example: `{"type":"hud","state":"doing","task":"Clear or re-seat a sink drain trap","step":"2/5","title":"Bucket under the trap","say":"Put a bucket…","gate":true,"verified":"Find the trap"}`
 

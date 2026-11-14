@@ -15,6 +15,7 @@ import { CoachSession } from './live.js';
 import { Watcher } from './watcher.js';
 import { Recorder } from './recorder.js';
 import { connect } from './orchestrator.js';
+import { CARDS_DIR } from './cards.js';
 
 if (!process.env.GEMINI_API_KEY) {
   console.error('GEMINI_API_KEY missing. Put it in the repo-root .env (see .env.example).');
@@ -28,6 +29,7 @@ const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const app = express();
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(webDir));
+app.use('/cards', express.static(CARDS_DIR, { maxAge: '1h' })); // designers' glasses display cards
 
 function attachLive(server) {
   const wss = new WebSocketServer({ server, path: '/live' });

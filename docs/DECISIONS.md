@@ -9,7 +9,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 | Meta: Creativity & use case | D1, D2, D16 |
 | Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14 |
 | Meta: Real-world value & feasibility | D1, D16, D17 |
-| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18 |
+| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19 |
 | Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
 
 ---
@@ -122,3 +122,10 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
   - dry P-trap photo + "my sink is leaking" → inspector unsure (no visible problem 56%, leak 37%) → Live: *"I see the drain trap, but can you point to exactly where the water is leaking from?"*
 - **Pitch line:** "Fast, calibrated checks decide when they can; when they can't, they say so and hand over to the model that can reason, instead of guessing."
 - **Criterion:** Google innovative / essential; Meta trust.
+
+### D19 · Display = the designers' fixed cards, chosen by the brain (Sat evening)
+- **What:** 30 designed cards (design/glasses-ui) for the 600×600 see-through display: one per step (stopper → bucket → unscrew → rinse → refit → water), feedback (correct, careful, try again), system (offline, low battery, paused). The server attaches `card` + `cardUrl` to every `hud`; the app shows the image.
+- **Why fixed cards, not generated images:** instant (no generation latency), readable at a glance, consistent, work when the network is bad, and designed for the display's constraints (black = see-through, icon + 1–3 words). Generated images would be slow and could invent details (bad for trust).
+- **The P-trap draft now follows the designers' 6 steps** (still awaiting HVAC review), incl. a verbal safety question first ("drain cleaner today?") and a hard stop + "call a plumber" card when water still won't drain (blockage further down).
+- **Planned add-on (user's idea):** "which nut?" → Robotics-ER 2 locates the part → the server **crops the real camera image** around it and circles it → shown on the display. Faithful (a crop, not a generated image), uses ER for the job it's built for, and makes the first-person view the interface.
+- **Criterion:** Meta UX & accessibility, Creativity.

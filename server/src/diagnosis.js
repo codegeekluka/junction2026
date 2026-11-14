@@ -10,7 +10,7 @@ export const DIAGNOSES = {
   sink: {
     title: 'Sink problem',
     quality: 'image_quality',
-    hazard: { q: 'hazard', min: 0.75, say: 'Stop. That looks dangerous. Turn off the water at the valve, keep away from any electrics, and call a professional.' },
+    hazard: { card: 'careful', q: 'hazard', min: 0.75, say: 'Stop. That looks dangerous. Turn off the water at the valve, keep away from any electrics, and call a professional.' },
     questions: {
       problem: {
         label: 'Which problem', type: 'choice',
