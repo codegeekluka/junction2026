@@ -19,6 +19,13 @@ const TOOL_DECLARATIONS = [
     }, required: ['task_id'] },
   },
   {
+    name: 'diagnose',
+    description: 'Look closely at the problem with the camera inspector before guessing. Use when the user describes a problem or asks what is wrong. The result (diagnosis, or a request for your judgement when the inspector is unsure) arrives as an [INSPECTOR] message within a few seconds.',
+    parameters: { type: 'OBJECT', properties: {
+      area: { type: 'STRING', description: 'What to diagnose: "sink" (sink, tap, drain pipes) or "bottle" (test).' },
+    }, required: ['area'] },
+  },
+  {
     name: 'get_task_status',
     description: 'Current procedure, step number and what the camera inspector last saw. Use when the user asks what step they are on or whether something is done.',
     parameters: { type: 'OBJECT', properties: {} },

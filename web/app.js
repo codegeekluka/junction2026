@@ -166,6 +166,7 @@ function renderHud(h) {
   const note = $('hud-note');
   note.className = 'hud-note';
   if (h.state === 'mistake') note.textContent = `⚠ ${h.warning}`;
+  else if (h.state === 'unsure' && h.warning) note.textContent = `? ${h.warning}`;
   else if (h.state === 'cant_see') note.textContent = 'Can’t see clearly. Move closer or add light.';
   else if (h.verified) { note.textContent = `✓ Verified: ${h.verified}`; note.classList.add('verified'); }
   else note.textContent = h.gate ? 'Safety step: must be verified before continuing' : '';

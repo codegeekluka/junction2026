@@ -1,14 +1,18 @@
 // Connects the two Gemini models for one session:
 //   Gemini Live (live.js)  – the voice. Starts expert procedures via tools.
-//   Decisions API (watcher) – the inspector. Verifies each step on camera.
+//   Decisions API (watcher) – the inspector. Diagnoses the problem (decision tree) and
+//                             verifies each step on camera; unsure cases escalate to Live.
 // Verified events from the watcher become short [INSPECTOR] messages the coach speaks,
 // and 'hud' messages for the screen / glasses display.
 
 import { TaskRunner } from './task-runner.js';
 import { TASKS } from './tasks.js';
+import { DiagnosisRunner } from './diagnosis-runner.js';
+import { DIAGNOSES } from './diagnosis.js';
 
 export function connect({ coach, watcher, send, log, recorder }) {
-  let runner = null;
+  let runner = null;   // expert procedure (TaskRunner)
+  let diag = null;     // running diagnosis (DiagnosisRunner), one-shot
 
   // ---- Capture policy (Google booth: verify at the moments that matter, don't stream) ----
   // The server tells the client how many frames to send; less upload on crowded Wi-Fi.
@@ -18,14 +22,15 @@ export function connect({ coach, watcher, send, log, recorder }) {
   let fps = null;
   const capturePolicy = () => {
     const step = runner && !runner.finished ? runner.step : null;
-    const risky = Boolean(step && (step.gate || step.mistakes?.length));
+    const diagnosing = Boolean(diag && !diag.finished);
+    const risky = diagnosing || Boolean(step && (step.gate || step.mistakes?.length));
     // CAPTURE_MODE=careful → 2 fps on every step (more corrections, more data);
     // default "smart" → 2 fps only on risky steps. See docs/DECISIONS.md (smart capture).
     const careful = process.env.CAPTURE_MODE === 'careful';
     const want = risky || (careful && step) ? 2 : 0.5;
     if (want !== fps) {
       fps = want;
-      send({ type: 'capture', fps, reason: risky ? `risky step: "${step.title}"` : step ? 'normal step' : 'no procedure running' });
+      send({ type: 'capture', fps, reason: diagnosing ? 'diagnosing' : risky ? `risky step: "${step.title}"` : step ? 'normal step' : 'no procedure running' });
     }
   };
   const snap = (n = 1, gapMs = 350) => { for (let i = 0; i < n; i++) setTimeout(() => send({ type: 'snap' }), i * gapMs); };
@@ -77,17 +82,74 @@ export function connect({ coach, watcher, send, log, recorder }) {
         coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
         hud('mistake', { warning: e.say });
       } else if (e.kind === 'cant_see') {
-        coach.notify('The camera view is too dark or blurry to check this step. Ask them to move closer or add light.');
+        coach.notify('The camera view is too dark or blurry to check this. Ask them to move closer or add light.');
         hud('cant_see');
+      } else if (e.kind === 'stuck') {
+        // ESCALATION: the inspector can't decide → the reasoning model takes a look.
+        coach.notify(`The inspector can't tell whether step "${e.title}" is done (about ${Math.round(e.p * 100)}%). ` +
+          'Look at the camera yourself and help: ask them to show it from another angle or closer, or ask what they did. ' +
+          'Do not tell them it is done; the inspector confirms it.');
+        hud('unsure', { warning: 'Can\u2019t tell yet. Show it from another angle.' });
+      } else if (e.kind === 'diagnosed') {
+        diag = null;
+        capturePolicy();
+        const p = Math.round(e.p * 100);
+        if (e.procedure) {
+          const t = TASKS[e.procedure];
+          coach.notify(`Diagnosis verified on camera: ${e.label} (${p}% sure). An expert-verified procedure exists: "${t.title}" (id ${e.procedure}, ${t.steps.length} steps). ` +
+            `Tell the user what you see in one sentence and ask if they want to fix it together. If yes, call start_task with "${e.procedure}".`);
+          diagHud('diagnosed', `Looks like ${e.label}`, `Expert procedure available: ${t.title}`);
+        } else if (e.nothingWrong) {
+          coach.notify(`Diagnosis: ${e.label} (${p}% sure). Tell the user nothing looks wrong from here, and ask what they noticed (sound, smell, drip, when it happens).`);
+          diagHud('diagnosed', 'Nothing visibly wrong', 'Tell me what you noticed');
+        } else if (e.showMe) {
+          coach.notify(`The inspector can't see the problem area: ${e.label}. Ask the user: ${e.showMe} Then call diagnose again.`);
+          diagHud('unsure', 'Show me the problem', e.showMe);
+        } else {
+          // ESCALATION: known problem, but no expert procedure yet → Live's own knowledge, flagged.
+          coach.notify(`Diagnosis: ${e.label} (${p}% sure). There is NO expert-verified procedure for this yet. ` +
+            'Help with your own knowledge if it is a simple, safe fix, say clearly that this advice is not expert-verified, and suggest a professional otherwise.');
+          diagHud('diagnosed', `Looks like ${e.label}`, 'No expert procedure yet: general advice only');
+        }
+      } else if (e.kind === 'escalate') {
+        // ESCALATION: the fast inspector isn't sure → hand over to the reasoning model.
+        diag = null;
+        capturePolicy();
+        coach.notify(`The inspector is not sure what the problem is (${e.why}). Use your own judgement: look at the image, ` +
+          'and ask the user ONE short clarifying question or for a better view. Then call diagnose again if useful.');
+        diagHud('unsure', 'Not sure yet', 'Asking you a question to narrow it down');
+      } else if (e.kind === 'hazard') {
+        diag = null;
+        capturePolicy();
+        coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
+        diagHud('mistake', 'Stop: hazard', e.say);
       }
     }
+  };
+
+  const diagHud = (state, title, say) => {
+    capturePolicy();
+    send({ type: 'hud', state, task: 'Diagnosis', step: null, title, say, gate: false,
+      ...(state === 'mistake' ? { warning: say } : {}) });
   };
 
   // ---- Voice → tools ----
   coach.onTool = async (name, args) => {
     switch (name) {
+      case 'diagnose': {
+        const area = String(args.area ?? '').toLowerCase();
+        const id = DIAGNOSES[area] ? area : /bottle/.test(area) ? 'bottle' : 'sink';
+        runner = null;
+        diag = new DiagnosisRunner(id);
+        watcher.startTask(diag);
+        diagHud('diagnosing', 'Taking a look…', 'Hold the camera steady on the problem');
+        snap(2);
+        return { ok: true, looking_at: DIAGNOSES[id].title,
+          note: 'Say you are taking a look (one short sentence). The result arrives as an [INSPECTOR] message within a few seconds. Do not guess before it.' };
+      }
       case 'start_task': {
         if (!TASKS[args.task_id]) return { ok: false, error: `Unknown procedure. Available: ${Object.keys(TASKS).join(', ')}` };
+        diag = null;
         runner = new TaskRunner(args.task_id);
         watcher.startTask(runner);
         hud('doing');
@@ -121,6 +183,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
       }
       case 'stop_task': {
         runner = null;
+        diag = null;
         watcher.stop();
         hud('stopped');
         return { ok: true };
@@ -135,5 +198,6 @@ export function connect({ coach, watcher, send, log, recorder }) {
   // Let the client start a procedure directly too (testing without voice).
   return {
     startTask(id) { return coach.onTool('start_task', { task_id: id }); },
+    diagnose(area) { return coach.onTool('diagnose', { area }); },
   };
 }
