@@ -9,8 +9,8 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 | Meta: Creativity & use case | D1, D2, D16 |
 | Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14 |
 | Meta: Real-world value & feasibility | D1, D16, D17 |
-| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15 |
-| Google: integration / innovative / essential | D5, D6, D7, D8, D12 |
+| Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18 |
+| Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
 
 ---
 
@@ -54,7 +54,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - **What we did:** all of a procedure's questions in **one call per frame** (latency stays flat with more questions); a gate question first ("is there a bottle at all?") before the state question.
 - **Evidence:** bottle test went from 79% to **all 19 labelled frames correct** after adding the gate and sharper wording (background bottles were being counted; "held" vs "standing with a hand on it" was ambiguous).
 - **Lesson for the pitch:** the model was fine; **precise definitions are the hard part, and that's the expert's job** (supports D2).
-- **Still to build:** the diagnosis branch (which problem → which procedure) and escalation of unsure cases to Live.
+- **Diagnosis + escalation: built, see D18.**
 - **Criterion:** Google innovative; Technical execution.
 
 ### D8 · Confidence thresholds
@@ -108,3 +108,17 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - Now: the server runs on a laptop at the venue. Latency isn't the issue (Google processing dominates), reliability is (venue Wi-Fi, phone must reach the laptop).
 - Plan: Google Cloud Run in Finland (europe-north1) for the demo; any internet (incl. 4G hotspot) works, one address for the team.
 - **Criterion:** Technical execution, feasibility.
+
+### D18 · Diagnosis tree + escalation to the reasoning model (Google booth advice, built Sat)
+- **Why:** booth: "Is it one of the problems we can solve with decisions alone, or does it need reasoning? If confidence drops below a threshold, send it to the Live API." Also cost: the cheap model handles the clear cases, the expensive one only the hard ones.
+- **How:** the user describes a problem → Live calls `diagnose(area)` → the inspector asks the whole tree in **one call per frame** (problem choice + each branch's confirm check + hazards) and walks it in code:
+  - confident (≥0.75, twice) **and** the branch check agrees → diagnosis; offer the expert procedure (user consents → `start_task`)
+  - known problem but **no expert procedure** → escalate: Live helps with its own knowledge, **saying it isn't expert-verified**
+  - **unsure** after ~3 s → escalate: Live looks itself and asks one clarifying question
+  - **hazard** (spraying water, wet electrics; broken glass in the test tree) → urgent stop
+- **During a procedure:** if a step's check stays in the "can't tell" band (25–75%) for 8 checks → escalate to Live ("show it from another angle"); Live may not mark it done.
+- **Evidence (end-to-end, real Gemini):**
+  - fallen bottle → "fallen over, 99%" in **1.3 s** → coach offers the procedure → "yes" → procedure starts.
+  - dry P-trap photo + "my sink is leaking" → inspector unsure (no visible problem 56%, leak 37%) → Live: *"I see the drain trap, but can you point to exactly where the water is leaking from?"*
+- **Pitch line:** "Fast, calibrated checks decide when they can; when they can't, they say so and hand over to the model that can reason, instead of guessing."
+- **Criterion:** Google innovative / essential; Meta trust.

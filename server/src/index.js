@@ -55,6 +55,7 @@ function attachLive(server) {
         case 'watch': watcher.start(msg.set); break;
         case 'unwatch': watcher.stop(); break;
         case 'task': orch.startTask(msg.task); break;
+        case 'diagnose': orch.diagnose(msg.area); break;
         case 'simulate_drop': coach.simulateDrop(); break;
         case 'feedback': watcher.feedback(msg); break;
         case 'text': coach.sendText(msg.text); break;

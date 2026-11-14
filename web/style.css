@@ -90,3 +90,9 @@ body.running.watching .viewport { aspect-ratio: 16 / 9; }
 #engines .blink .dot { animation: blink 300ms ease-out; }
 @keyframes blink { from { box-shadow: 0 0 0 6px rgba(90, 209, 122, 0.5); } to { box-shadow: 0 0 0 0 rgba(90, 209, 122, 0); } }
 @media (prefers-reduced-motion: reduce) { #engines .blink .dot { animation: none; } }
+
+/* Diagnosis states on the step card */
+#hud[data-state="diagnosing"] { border-left-color: #c084fc; }
+#hud[data-state="diagnosed"] { border-left-color: #5ad17a; }
+#hud[data-state="unsure"] { border-left-color: #ffd23f; }
+#hud[data-state="unsure"] .hud-note { color: #ffd23f; }

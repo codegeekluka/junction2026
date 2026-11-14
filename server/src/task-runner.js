@@ -8,6 +8,8 @@ const CONSECUTIVE = 2;          // a check must hold in 2 answers in a row (~1�
 const QUALITY_MIN = 0.6;        // "too dark/blurry" if P(yes) ≥ this…
 const QUALITY_CONSECUTIVE = 3;  // …in 3 answers in a row
 const COOLDOWN_MS = 10000;      // don't repeat the same warning within 10 s
+const STUCK_CHECKS = 8;         // done-check stuck in the "can't tell" band this many checks → ask Live
+const STUCK_BAND = [0.25, 0.75];
 
 /** Probability that a check { q, is?, min } holds, from one set of answers. */
 export function checkP(check, answers) {
@@ -80,6 +82,14 @@ export class TaskRunner {
       return { events, headline: { choice: 'done', confidence: p } };
     }
     this.streak.done = 0;
+    // Escalation: the inspector can't decide (≈ 25–75%) for a while → hand it to the
+    // reasoning model, which can look itself and ask for another angle.
+    if (p >= STUCK_BAND[0] && p < STUCK_BAND[1]) {
+      if (this.#bump('stuck') >= STUCK_CHECKS && this.#cool(`stuck:${step.id}`, 20000)) {
+        events.push({ kind: 'stuck', title: step.title, p });
+        this.streak.stuck = 0;
+      }
+    } else this.streak.stuck = 0;
     return { events, headline: { choice: 'not_yet', confidence: 1 - p } };
   }
 
@@ -98,9 +108,9 @@ export class TaskRunner {
   questions() { return this.task.questions; }
 
   #bump(key) { return (this.streak[key] = (this.streak[key] ?? 0) + 1); }
-  #cool(id) {
+  #cool(id, ms = COOLDOWN_MS) {
     const now = Date.now();
-    if (now - (this.lastWarn[id] ?? 0) < COOLDOWN_MS) return false;
+    if (now - (this.lastWarn[id] ?? 0) < ms) return false;
     this.lastWarn[id] = now;
     return true;
   }

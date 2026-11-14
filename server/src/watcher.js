@@ -49,6 +49,11 @@ export class Watcher {
   /** Run an expert procedure: all its questions are asked on every frame. */
   startTask(runner) {
     const questions = describe(runner.questions());
+    if (runner.kind === 'diagnosis') {
+      const labels = Object.fromEntries(Object.entries(runner.task.branches).map(([k, b]) => [k, b.label[0].toUpperCase() + b.label.slice(1)]));
+      this.#begin(`diag:${runner.id}`, runner.questions(), { question: 'problem', title: 'Diagnosing…', labels }, runner.task.quality, runner, questions);
+      return;
+    }
     questions.__step = { type: 'choice', label: 'Current step', options: Object.keys(STEP_HEADLINE.labels) };
     this.#begin(`task:${runner.id}`, runner.questions(), STEP_HEADLINE, runner.task.quality, runner, questions);
   }
@@ -110,6 +115,7 @@ export class Watcher {
         this.recorder?.taskEvents(events);
         this.onTaskEvents(events, this.runner);
       }
+      if (this.runner?.kind === 'diagnosis' && this.runner.finished) this.stop();
       if (this.burstLeft > 0 && --this.burstLeft === 0) {
         const cb = this.burstCb;
         this.burstCb = null;
