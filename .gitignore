@@ -16,3 +16,6 @@ local.properties
 Thumbs.db
 .vscode/
 .idea/
+
+# Dev session logs (may contain camera frames)
+server/logs/

@@ -24,14 +24,38 @@ details { color: var(--muted); font-size: 0.85rem; }
 #mode { border: 1px solid #333; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 12px; }
 #mode legend { color: var(--muted); font-size: 0.85rem; padding: 0 4px; }
 #mode label { display: flex; gap: 6px; align-items: center; min-height: 44px; }
-#watch-meta { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; }
-#watch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-#watch-list li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
-#watch-list .q { font-size: 0.95rem; }
-#watch-list .a { font-weight: 700; font-variant-numeric: tabular-nums; }
-#watch-list .bar { grid-column: 1 / -1; height: 10px; border-radius: 5px; background: #2a2a2a; overflow: hidden; }
-#watch-list .bar > span { display: block; height: 100%; width: 0; transition: width 200ms ease-out, background-color 200ms; }
-#watch-list .sure .a { color: #5ad17a; }   #watch-list .sure .bar > span { background: #5ad17a; }
-#watch-list .maybe .a { color: #ffd23f; }  #watch-list .maybe .bar > span { background: #ffd23f; }
-#watch-list .unsure .a { color: var(--muted); } #watch-list .unsure .bar > span { background: #666; }
-@media (prefers-reduced-motion: reduce) { #watch-list .bar > span { transition: none; } }
+#watch-panel { display: grid; gap: 10px; padding: 16px; border-radius: 14px; background: #1a1a1a; }
+.w-title { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.w-verdict { margin: 0; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+.w-cert { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.w-cert .dot { width: 14px; height: 14px; border-radius: 50%; background: #555; flex: none; }
+.w-cert[data-level="sure"] .dot { background: #5ad17a; }
+.w-cert[data-level="maybe"] .dot { background: #ffd23f; }
+.w-cert[data-level="unsure"] .dot { background: #888; }
+.w-cert[data-level="unsure"] { color: var(--muted); }
+.w-meter { height: 8px; border-radius: 4px; background: #2c2c2c; overflow: hidden; }
+.w-meter > span { display: block; height: 100%; width: 0; background: #ddd; transition: width 200ms ease-out; }
+.w-warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: #3a2a10; color: #ffd23f; font-weight: 600; }
+.w-label { margin: 6px 0 0; color: var(--muted); font-size: 0.8rem; }
+.w-history { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; height: 28px; }
+.w-history li { border-radius: 3px; background: #333; }
+.w-history li.faint { opacity: 0.35; }
+.w-history li.err { background: repeating-linear-gradient(45deg, #444 0 3px, #222 3px 6px); }
+.w-legend { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8rem; color: var(--muted); }
+.w-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.w-feedback { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.w-feedback button, .fb-options button { font: inherit; font-weight: 700; padding: 14px; border-radius: 12px; border: 1px solid #444;
+  background: #262626; color: var(--fg); touch-action: manipulation; min-height: 48px; }
+.w-feedback button:active, .fb-options button:active { transform: scale(0.97); }
+#fb-pick p { margin: 0 0 6px; }
+.fb-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.w-thanks { margin: 0; min-height: 1.2em; color: var(--muted); font-size: 0.9rem; }
+#watch-panel details { margin-top: 4px; }
+#watch-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 0.9rem; }
+#watch-list li { display: flex; justify-content: space-between; gap: 12px; color: var(--fg); }
+#watch-list li span:last-child { color: var(--muted); text-align: right; }
+@media (prefers-reduced-motion: reduce) { .w-meter > span { transition: none; } .w-feedback button:active, .fb-options button:active { transform: none; } }
+
+/* While running: hide setup, keep camera + answer + Stop on one screen */
+body.running #consent, body.running #mode { display: none; }
+body.running.watching .viewport { aspect-ratio: 16 / 9; }

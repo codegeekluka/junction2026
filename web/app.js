@@ -94,35 +94,108 @@ function connectSocket() {
   };
 }
 // ---------- Watcher panel ----------
+// Big plain answer + a separate certainty label. Colour only ever means certainty
+// (the dot) or which answer it was (history strip), never "good/bad".
+const OPTION_COLORS = ['#4ea8ff', '#ff7a59', '#c084fc', '#9ca3af', '#2dd4bf', '#f472b6'];
+let watch = null;      // { headline, quality, questions, optionColor }
+let history = [];      // last 20 { option, level } | { err }
+let lastVerdict = null;
+
+const certainty = (c) => c >= SURE ? ['sure', 'Very sure']
+  : c >= MAYBE ? ['maybe', 'Fairly sure'] : ['unsure', 'Not sure. Show me another angle'];
+
 function onWatch(msg) {
   const panel = $('watch-panel');
-  if (msg.state !== 'on') { panel.hidden = true; return; }
-  watchQuestions = msg.questions;
+  if (msg.state !== 'on') { panel.hidden = true; watch = null; return; }
+  const opts = msg.questions[msg.headline.question].options;
+  watch = { ...msg, optionColor: Object.fromEntries(opts.map((o, i) => [o, OPTION_COLORS[i % OPTION_COLORS.length]])) };
+  history = []; lastVerdict = null;
   panel.hidden = false;
   setStatus('live', 'Watching (Decisions API)');
-  $('watch-list').replaceChildren(...Object.entries(watchQuestions).map(([id, q]) => {
+  $('w-title').textContent = msg.headline.title;
+  $('w-verdict').textContent = 'Looking…';
+  $('w-legend').replaceChildren(...opts.map((o) => {
+    const span = document.createElement('span');
+    const sw = document.createElement('i');
+    sw.style.background = watch.optionColor[o];
+    span.append(sw, msg.headline.labels[o] ?? o);
+    return span;
+  }));
+  $('fb-options').replaceChildren(...opts.map((o) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = msg.headline.labels[o] ?? o;
+    b.onclick = () => sendFeedback(false, o);
+    return b;
+  }));
+  $('fb-pick').hidden = true;
+  $('fb-thanks').textContent = '';
+  renderHistory();
+}
+
+function renderDecision(msg) {
+  if (!watch) return;
+  if (msg.error) {
+    $('watch-meta').textContent = `last check ${msg.error} after ${(msg.ms / 1000).toFixed(1)} s`;
+    pushHistory({ err: true });
+    return;
+  }
+  const head = msg.answers?.[watch.headline.question];
+  if (head) {
+    const [level, text] = certainty(head.confidence);
+    const verdict = watch.headline.labels[head.choice] ?? head.choice;
+    if (verdict !== lastVerdict) { $('w-verdict').textContent = verdict; lastVerdict = verdict; } // announce changes only
+    $('w-cert').dataset.level = level;
+    $('w-cert-text').textContent = `${text} (${Math.round(head.confidence * 100)}%)`;
+    $('w-meter').style.width = `${Math.round(head.confidence * 100)}%`;
+    pushHistory({ option: head.choice, level });
+  }
+  const q = msg.answers?.[watch.quality];
+  $('w-warn').hidden = !(q && q.noul >= MAYBE);
+  $('watch-meta').textContent = `answered in ${(msg.ms / 1000).toFixed(2)} s`;
+  $('watch-list').replaceChildren(...Object.entries(msg.answers ?? {})
+    .filter(([id]) => id !== watch.headline.question)
+    .map(([id, a]) => {
+      const li = document.createElement('li');
+      const ans = a.type === 'noul' ? (a.noul >= 0.5 ? 'Yes' : 'No')
+        : a.type === 'choice' ? a.choice.replace(/_/g, ' ') : a.legend?.[Math.round(a.score)] ?? a.score;
+      const l = document.createElement('span');
+      l.textContent = watch.questions[id]?.label ?? id;
+      const r = document.createElement('span');
+      r.textContent = `${ans} · ${certainty(a.confidence)[0] === 'sure' ? 'very sure' : certainty(a.confidence)[0] === 'maybe' ? 'fairly sure' : 'not sure'}`;
+      li.append(l, r);
+      return li;
+    }));
+}
+
+function pushHistory(entry) {
+  history.push(entry);
+  if (history.length > 20) history.shift();
+  renderHistory();
+}
+function renderHistory() {
+  $('w-history').replaceChildren(...Array.from({ length: 20 }, (_, i) => {
+    const h = history[i - (20 - history.length)];
     const li = document.createElement('li');
-    li.id = `q-${id}`; li.className = 'unsure';
-    li.innerHTML = '<span class="q"></span><span class="a">–</span><span class="bar"><span></span></span>';
-    li.querySelector('.q').textContent = q.label;
+    if (h?.err) li.className = 'err';
+    else if (h) {
+      li.style.background = watch.optionColor[h.option] ?? '#666';
+      if (h.level === 'unsure') li.className = 'faint';
+      li.title = watch.headline.labels[h.option] ?? h.option;
+    }
     return li;
   }));
 }
-function renderDecision(msg) {
-  if (msg.error) { $('watch-meta').textContent = `Last check ${msg.error} (${msg.ms} ms). Retrying…`; return; }
-  $('watch-meta').textContent = `Answered in ${(msg.ms / 1000).toFixed(2)} s`;
-  for (const [id, a] of Object.entries(msg.answers ?? {})) {
-    const li = $(`q-${id}`);
-    if (!li) continue;
-    let text, conf = a.confidence ?? 0;
-    if (a.type === 'noul') text = a.noul >= 0.5 ? `Yes ${Math.round(a.noul * 100)}%` : `No ${Math.round((1 - a.noul) * 100)}%`;
-    else if (a.type === 'choice') text = `${a.choice.replace(/_/g, ' ')} ${Math.round(conf * 100)}%`;
-    else text = `${a.legend?.[Math.round(a.score)] ?? a.score?.toFixed(1)} ${Math.round(conf * 100)}%`;
-    li.className = conf >= SURE ? 'sure' : conf >= MAYBE ? 'maybe' : 'unsure';
-    li.querySelector('.a').textContent = conf >= MAYBE ? text : `unsure (${text})`;
-    li.querySelector('.bar > span').style.width = `${Math.round(conf * 100)}%`;
-  }
+
+function sendFeedback(correct, expected) {
+  sendMsg({ type: 'feedback', correct, expected });
+  $('fb-pick').hidden = true;
+  $('fb-thanks').textContent = correct ? 'Noted as right ✓'
+    : `Noted: it was "${watch.headline.labels[expected] ?? expected}". Frame saved for tuning.`;
+  setTimeout(() => ($('fb-thanks').textContent = ''), 3000);
 }
+$('fb-right').onclick = () => sendFeedback(true);
+$('fb-wrong').onclick = () => { $('fb-pick').hidden = false; $('fb-thanks').textContent = ''; };
 
 const sendMsg = (m) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify(m));
 
@@ -174,6 +247,7 @@ toggle.addEventListener('click', async () => {
     resumeHandle = null;
     toggle.textContent = 'Start';
     toggle.setAttribute('aria-pressed', 'false');
+    document.body.classList.remove('running', 'watching');
     document.querySelectorAll('input[name="mode"]').forEach((r) => (r.disabled = false));
     $('watch-panel').hidden = true;
     setStatus('stopped');
@@ -194,6 +268,8 @@ toggle.addEventListener('click', async () => {
     return;
   }
   running = true;
+  document.body.classList.add('running');
+  document.body.classList.toggle('watching', mode !== 'coach');
   toggle.textContent = 'Stop';
   toggle.setAttribute('aria-pressed', 'true');
   connectSocket();

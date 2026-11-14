@@ -23,6 +23,33 @@
       <video id="preview" playsinline muted autoplay aria-label="Camera preview"></video>
     </div>
 
+    <section id="watch-panel" aria-label="What the watcher sees" hidden>
+      <p class="w-title" id="w-title"></p>
+      <p class="w-verdict" id="w-verdict" aria-live="polite">Looking…</p>
+      <p class="w-cert" id="w-cert" data-level="none"><span class="dot" aria-hidden="true"></span><span id="w-cert-text">Waiting for the first check…</span></p>
+      <div class="w-meter" aria-hidden="true"><span id="w-meter"></span></div>
+      <p class="w-warn" id="w-warn" role="alert" hidden>Too dark or blurry. Move closer or add light.</p>
+
+      <p class="w-label">Last 20 checks (newest right)</p>
+      <ol class="w-history" id="w-history"></ol>
+      <p class="w-legend" id="w-legend"></p>
+
+      <div class="w-feedback" role="group" aria-label="Is this answer right?">
+        <button type="button" id="fb-right">✓ Right</button>
+        <button type="button" id="fb-wrong">✗ Wrong</button>
+      </div>
+      <div id="fb-pick" hidden>
+        <p>What is it actually?</p>
+        <div id="fb-options" class="fb-options"></div>
+      </div>
+      <p id="fb-thanks" class="w-thanks" role="status"></p>
+
+      <details>
+        <summary>All checks · <span id="watch-meta">–</span></summary>
+        <ul id="watch-list"></ul>
+      </details>
+    </section>
+
     <fieldset id="mode">
       <legend>Mode</legend>
       <label><input type="radio" name="mode" value="coach" checked /> Coach (voice)</label>
@@ -32,10 +59,7 @@
 
     <button id="toggle" type="button">Start</button>
 
-    <section id="watch-panel" aria-label="What the watcher sees" hidden>
-      <p id="watch-meta" aria-live="off">Waiting for first answer…</p>
-      <ul id="watch-list"></ul>
-    </section>
+
 
     <section aria-label="Conversation">
       <ol id="transcript"></ol>

@@ -67,3 +67,23 @@ export const QUESTION_SETS = {
     },
   },
 };
+
+// The one answer the UI shows big, per set: which question, and plain words for each option.
+export const HEADLINES = {
+  bottle: {
+    question: 'bottle_state',
+    title: 'The bottle is…',
+    labels: { standing: 'Standing up', fallen: 'Fallen over', held: "In someone's hand", none: 'Not in view' },
+  },
+  sink_start: {
+    question: 'problem',
+    title: 'What I see',
+    labels: {
+      leaking_trap: 'Leak at the drain pipe', slow_drain: 'Slow drain', dripping_tap: 'Dripping tap',
+      no_visible_problem: 'No problem visible', no_plumbing: 'No plumbing in view',
+    },
+  },
+};
+
+// Plain-language names for the other questions (shown in "details").
+export const QUALITY_QUESTION = 'image_quality';

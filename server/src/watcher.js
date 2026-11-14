@@ -7,7 +7,7 @@
 // off, and a hard AbortSignal timeout is needed (one call once hung for 590 s).
 
 import { GoogleGenAI } from '@google/genai';
-import { QUESTION_SETS } from './questions.js';
+import { QUESTION_SETS, HEADLINES, QUALITY_QUESTION } from './questions.js';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL = 'gemini-decision-1';
@@ -15,8 +15,11 @@ const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 1000);
 const TIMEOUT_MS = 3000;
 
 export class Watcher {
-  constructor(send, log = console.log) {
+  constructor(send, log = console.log, recorder = null) {
     this.send = send;
+    this.recorder = recorder;
+    this.lastDecision = null;  // last answers + the frame they were computed on (for feedback)
+    this.lastFrameUsed = null;
     this.log = log;
     this.frame = null;      // latest base64 JPEG (memory only)
     this.frameSeq = 0;
@@ -33,7 +36,9 @@ export class Watcher {
     }
     this.stop();
     this.setName = setName;
-    this.send({ type: 'watch', state: 'on', set: setName, questions: describe(QUESTION_SETS[setName]) });
+    this.send({ type: 'watch', state: 'on', set: setName, questions: describe(QUESTION_SETS[setName]),
+      headline: HEADLINES[setName], quality: QUALITY_QUESTION });
+    this.recorder?.start(setName);
     this.timer = setInterval(() => this.#tick(), INTERVAL_MS);
   }
 
@@ -47,30 +52,42 @@ export class Watcher {
     if (this.busy || !this.frame || this.frameSeq === this.lastAskedSeq) return;
     this.busy = true;
     const seq = (this.lastAskedSeq = this.frameSeq);
+    const frame = this.frame;
     const t0 = performance.now();
     try {
       const res = await ai.decisions.create({
         api_version: 'v1beta',
         model: MODEL,
-        input: [{ type: 'image', data: this.frame, mime_type: 'image/jpeg', resolution: 'low' }],
+        input: [{ type: 'image', data: frame, mime_type: 'image/jpeg', resolution: 'low' }],
         questions: toApi(QUESTION_SETS[this.setName]),
       }, { retries: { strategy: 'none' }, fetch_options: { signal: AbortSignal.timeout(TIMEOUT_MS) } });
       if (!this.timer) return; // stopped while waiting
-      this.send({
+      const msg = {
         type: 'decision',
         set: this.setName,
         ms: Math.round(performance.now() - t0),
         stale: this.frameSeq - seq, // frames that arrived while we waited
         answers: res.answers,
-      });
+      };
+      this.lastDecision = msg;
+      this.lastFrameUsed = frame;
+      this.send(msg);
+      this.recorder?.decision(msg, frame);
     } catch (err) {
       const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
       this.log('[watch]', timedOut ? `timeout after ${TIMEOUT_MS} ms` : err?.message || err);
-      this.send({ type: 'decision', set: this.setName, error: timedOut ? 'timeout' : 'failed',
-        ms: Math.round(performance.now() - t0) });
+      const msg = { type: 'decision', set: this.setName, error: timedOut ? 'timeout' : 'failed',
+        ms: Math.round(performance.now() - t0) };
+      this.send(msg);
+      this.recorder?.decision(msg);
     } finally {
       this.busy = false;
     }
+  }
+
+  /** User tapped Right/Wrong on the current answer. */
+  feedback(fb) {
+    this.recorder?.feedback(fb, this.lastDecision, this.lastFrameUsed);
   }
 
   stop() {
