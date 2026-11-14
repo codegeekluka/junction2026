@@ -2,7 +2,7 @@
 
 > Shared context for our team. Everyone (and every teammate's Claude / AI assistant) should read this first.
 > Claude Code loads this file automatically when it's opened in this folder.
-> **Game plan, roles and timeline: `PLAN.md`.** Meta glasses dev setup (DAT vs Web Apps, links, hardware troubleshooting): `META-DEV.md`. Full briefs (Meta, Gemini, ElevenLabs, Aiven), participant guide and SDK setup notes: `challenge-briefs.md`. Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`.
+> **Game plan, roles and timeline: `PLAN.md`.** Meta glasses dev setup (DAT vs Web Apps, links, hardware troubleshooting): `META-DEV.md`. Full briefs (Meta, Gemini, ElevenLabs, Aiven), participant guide and SDK setup notes: `challenge-briefs.md`. Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`. Verbatim source material (Meta brief, full participant guide, all tech challenges, hardware desk rules, glasses gotchas, reset and pairing steps): `research/` (start with `research/README.md`).
 
 ## The event
 - **Junction 2026**, Hype Areena, Espoo · Fri 13.11 16:00 → Sun 15.11 18:00 · team size 1–4 · €100k total prizes
