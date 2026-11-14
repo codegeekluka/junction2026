@@ -106,7 +106,9 @@ class GlassesDisplay(
     renderJob =
         scope.launch(sendDispatcher) {
           server
-              .map { s -> Card(s.link, s.activeTask != null, s.hud) }
+              // A task can be started by the button (activeTask) OR by the voice coach (then only
+              // the hud tells us), so any hud that isn't "stopped" counts as a running task.
+              .map { s -> Card(s.link, s.activeTask != null || (s.hud != null && s.hud.state != "stopped"), s.hud) }
               .distinctUntilChanged()
               .collect { card ->
                 target.sendContent { cardContent(card) }.onFailure { error, _ ->
