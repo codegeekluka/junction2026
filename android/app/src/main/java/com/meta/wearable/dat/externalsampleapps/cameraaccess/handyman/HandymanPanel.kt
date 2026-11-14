@@ -44,6 +44,7 @@ fun HandymanPanel(
     isStreaming: Boolean,
     onStartCoach: () -> Unit,
     onStartBottle: () -> Unit,
+    onStartSink: () -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -142,7 +143,9 @@ fun HandymanPanel(
         ) {
           Text("Talk to the coach")
         }
-        OutlinedButton(onClick = onStartBottle) { Text("Bottle practice (no voice)", color = Color.White) }
+        // Test buttons: start a procedure directly, without voice.
+        OutlinedButton(onClick = onStartBottle) { Text("Bottle", color = Color.White) }
+        OutlinedButton(onClick = onStartSink) { Text("Sink", color = Color.White) }
       } else {
         OutlinedButton(onClick = onStop) { Text("Stop", color = Color.White) }
       }

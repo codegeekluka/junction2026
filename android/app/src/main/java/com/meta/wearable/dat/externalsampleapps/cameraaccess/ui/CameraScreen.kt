@@ -159,6 +159,7 @@ fun CameraScreen(
           isStreaming = ui.isStreaming,
           onStartCoach = { cameraViewModel.startCoach(onRequestRecordAudioPermission) },
           onStartBottle = { cameraViewModel.server.startTask("bottle_demo") },
+          onStartSink = { cameraViewModel.server.startTask("ptrap") },
           onStop = { cameraViewModel.stopHandyman() },
       )
 

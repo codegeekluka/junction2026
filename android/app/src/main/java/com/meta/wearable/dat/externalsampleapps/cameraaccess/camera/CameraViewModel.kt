@@ -42,6 +42,7 @@ import com.meta.wearable.dat.core.session.DeviceSessionState
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.CardImages
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.FrameGrabber
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.GlassesDisplay
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.ServerConnection
@@ -130,7 +131,7 @@ class CameraViewModel(
 
   // Handyman: link to our backend, plus the latest stream size for the frame grabber.
   val server = ServerConnection(viewModelScope)
-  val glassesDisplay = GlassesDisplay(viewModelScope, server.state)
+  val glassesDisplay = GlassesDisplay(viewModelScope, server.state, CardImages(application))
 
   // Handyman Milestone 3: talk to the coach (glasses mic/speakers, or the phone as fallback).
   val voice = VoiceLink(application) { pcm -> server.sendAudio(pcm) }

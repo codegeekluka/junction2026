@@ -29,6 +29,11 @@ android {
 
   buildFeatures { buildConfig = true }
 
+  // Handyman: the designers' glasses display cards (design/glasses-ui/png, 30 PNGs) are packed
+  // straight from the repo as app assets, so there is one copy and the app has every card even
+  // while offline. Loaded by handyman/CardImages.kt.
+  sourceSets { getByName("main") { assets.srcDir("../../design/glasses-ui/png") } }
+
   defaultConfig {
     applicationId = "com.junction.handyman"
     minSdk = 31

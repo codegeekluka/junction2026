@@ -7,6 +7,7 @@
 
 package com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.meta.wearable.dat.core.session.DeviceSession
 import com.meta.wearable.dat.display.Display
@@ -16,6 +17,7 @@ import com.meta.wearable.dat.display.types.DisplayState
 import com.meta.wearable.dat.display.views.ContentScope
 import com.meta.wearable.dat.display.views.Direction
 import com.meta.wearable.dat.display.views.FlexBoxBackground
+import com.meta.wearable.dat.display.views.ImageSize
 import com.meta.wearable.dat.display.views.TextColor
 import com.meta.wearable.dat.display.views.TextStyle
 import kotlinx.coroutines.CoroutineScope
@@ -33,13 +35,31 @@ private data class Card(
     val link: Link,
     val hasTask: Boolean,
     val hud: Hud?,
+    /** Designer card to show (design/glasses-ui), or null → text card. */
+    val cardId: String?,
 )
+
+/**
+ * Picks the designer card. The server names one in every hud; the app adds the ones only it can
+ * know about: "offline" when the link to the server is down, "ready" when nothing is running.
+ */
+private fun pickCard(s: ServerUiState, hasTask: Boolean): String? {
+  val coachOn = s.coach != CoachState.OFF
+  val active = hasTask || coachOn
+  return when {
+    active && (s.link != Link.CONNECTED || s.coach == CoachState.RECONNECTING || s.coach == CoachState.OFFLINE) ->
+        "offline"
+    !hasTask -> "ready"
+    else -> s.hud?.card
+  }
+}
 
 enum class GlassesDisplayStatus { NONE, ATTACHING, READY, UNAVAILABLE }
 
 class GlassesDisplay(
     private val scope: CoroutineScope,
     private val server: StateFlow<ServerUiState>,
+    private val cards: CardImages,
 ) {
   companion object {
     private const val TAG = "Handyman:Display"
@@ -108,7 +128,10 @@ class GlassesDisplay(
           server
               // A task can be started by the button (activeTask) OR by the voice coach (then only
               // the hud tells us), so any hud that isn't "stopped" counts as a running task.
-              .map { s -> Card(s.link, s.activeTask != null || (s.hud != null && s.hud.state != "stopped"), s.hud) }
+              .map { s ->
+                val hasTask = s.activeTask != null || (s.hud != null && s.hud.state != "stopped")
+                Card(s.link, hasTask, s.hud, pickCard(s, hasTask))
+              }
               .distinctUntilChanged()
               .collect { card ->
                 target.sendContent { cardContent(card) }.onFailure { error, _ ->
@@ -118,8 +141,34 @@ class GlassesDisplay(
         }
   }
 
-  /** The card layout. One root flexBox per screen (Meta's rule). Text-first; images later. */
+  /**
+   * The card layout. One root flexBox per screen (Meta's rule). The designer image when there is
+   * one (it already carries the short label), with the step number above and any warning below;
+   * otherwise the text card.
+   */
   private fun ContentScope.cardContent(card: Card) {
+    val image = cards.get(card.cardId)
+    if (image != null) {
+      imageCardContent(card, image)
+      return
+    }
+    textCardContent(card)
+  }
+
+  private fun ContentScope.imageCardContent(card: Card, image: Bitmap) {
+    val hud = card.hud
+    flexBox(direction = Direction.COLUMN, gap = 8) {
+      val step = hud?.step?.takeIf { card.hasTask && card.cardId != "offline" && hud.state != "finished" }
+      step?.let { text("Step $it", style = TextStyle.META, color = TextColor.SECONDARY) }
+      image(bitmap = image, sizePreset = ImageSize.FILL)
+      when (hud?.state) {
+        "mistake" -> hud.warning?.let { text("⚠ $it", style = TextStyle.BODY) }
+        "unsure" -> hud.warning?.let { text("? $it", style = TextStyle.BODY) }
+      }
+    }
+  }
+
+  private fun ContentScope.textCardContent(card: Card) {
     val hud = card.hud
     flexBox(direction = Direction.COLUMN, gap = 12, padding = 24, background = FlexBoxBackground.CARD) {
       when {
