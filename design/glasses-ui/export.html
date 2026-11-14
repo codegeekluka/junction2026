@@ -1,0 +1,10 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500;600;700&display=swap">
+<style>html,body{margin:0;background:transparent;width:600px;height:600px;overflow:hidden}svg{display:block}</style>
+</head><body><div id="c" class="still"></div>
+<script src="cards.js"></script>
+<script>
+var id=location.hash.slice(1);var t=SINK_CARDS.find(function(c){return c.id===id;});
+document.getElementById('c').innerHTML=t?t.svg:'';
+</script></body></html>

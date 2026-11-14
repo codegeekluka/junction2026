@@ -1,0 +1,128 @@
+<title>Sink State Cards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a contact sheet. Every card sits on the same bathroom view, grouped by phase; click one to see it large. */
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --fg:#0F1419; --muted:#56606B; --line:#D9DFE5; --accent:#00789A; --accent-soft:#DDF3F9;
+  --f-head:"Space Grotesk",system-ui,sans-serif; --f-body:"Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B0E11;--surface:#141A1F;--fg:#E7EBEE;--muted:#97A1AB;--line:#252D35;--accent:#3DDCFF;--accent-soft:#0D2A33;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0E11;--surface:#141A1F;--fg:#E7EBEE;--muted:#97A1AB;--line:#252D35;--accent:#3DDCFF;--accent-soft:#0D2A33;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-head);font-size:clamp(26px,4vw,40px);line-height:1.1;margin:0;font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+h2{font-family:var(--f-head);font-size:20px;margin:0;font-weight:600}
+header p{margin:0;color:var(--muted);max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--fg);padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button:focus-visible,.tile:focus-visible,.close:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar small{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:24px 20px}
+figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tile{display:block;width:100%;padding:0;border:0;border-radius:12px;overflow:hidden;cursor:zoom-in;background:#000;aspect-ratio:1000/680}
+.tile svg.view{display:block;width:100%;height:100%}
+.png .tile{aspect-ratio:1;background:repeating-conic-gradient(#2a3036 0 25%,#1d2227 0 50%) 0 0/24px 24px}
+.png .tile svg.view{display:none}
+.tile .solo{display:none;width:100%;height:100%}
+.png .tile .solo{display:block}
+figcaption{display:flex;flex-direction:column;gap:2px;font-size:13.5px;color:var(--muted)}
+figcaption b{font-family:var(--f-head);font-size:15px;color:var(--fg);font-weight:600}
+figcaption .file{font-family:var(--f-mono);font-size:12px}
+.cue{display:grid;grid-template-columns:52px minmax(0,1fr);gap:6px}
+.cue span:first-child{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding-top:2px}
+dialog{border:0;padding:0;background:transparent;max-width:min(96vw,1100px);width:100%}
+dialog::backdrop{background:rgba(0,0,0,.8)}
+.big{position:relative;border-radius:14px;overflow:hidden;background:#000}
+.big svg{display:block;width:100%;height:auto}
+.close{position:absolute;right:12px;top:12px;font:inherit;font-size:14px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px;cursor:pointer}
+.big-cap{color:#E7EBEE;font-size:14px;padding:10px 4px}
+.note{font-size:13.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:12px;max-width:80ch}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Ray-Ban Display · 600 × 600 · bathroom sink</span>
+    <h1>Sink unclogging state cards</h1>
+    <p>One animated card per state, built from icons and 1 to 3 words, following the team's Ray-Ban Display design guide. Every card is shown on the same bathroom view. Each also exists as a transparent PNG to layer over your own footage.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="View">
+      <button id="vView" aria-pressed="true">Over the sink</button>
+      <button id="vPng" aria-pressed="false">PNG only</button>
+    </div>
+    <small id="count"></small>
+  </div>
+
+  <div id="groups"></div>
+
+  <p class="note"><b>Animated master:</b> <code>design/state-cards/svg/</code> holds one self-contained animated SVG per card, moving only position, rotation, scale and opacity, as Meta's web-app motion rules ask. It drops in as is on the web-app route and is the source for MP4 (toolkit route) and PNG-sequence exports. With reduced motion turned on, each card shows its still pose.</p>
+  <p class="note"><b>Stills:</b> PNGs are 1200 × 1200 (2×) with a transparent background, in <code>design/state-cards/png/</code>, showing each card's resting pose. To imitate the glasses, put them on a layer set to <b>Screen</b> blend mode over slightly darkened footage, right of centre. The sound and voice line under each card is the audio cue to play with it.</p>
+</div>
+
+<dialog id="dlg" aria-label="Card preview">
+  <div class="big"><button class="close" id="close">Close</button><div id="bigView"></div></div>
+  <div class="big-cap" id="bigCap"></div>
+</dialog>
+
+<script src="cards.js"></script>
+<script>
+(function(){
+  /* the drawn bathroom, same for every card (from the earlier mockup) */
+  var DEFS='<defs><pattern id="tl" width="70" height="70" patternUnits="userSpaceOnUse"><rect width="70" height="70" fill="#d1d9da"/><path d="M70 0H0V70" fill="none" stroke="#b3bec0" stroke-width="2"/></pattern>'+
+    '<radialGradient id="vig" cx="55%" cy="50%" r="72%"><stop offset="58%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".6"/></radialGradient></defs>';
+  var SCENE=DEFS+'<rect width="1000" height="680" fill="url(#tl)"/>'+
+    '<rect x="400" y="50" width="520" height="210" rx="6" fill="#a9bcc1" stroke="#8a9ca1" stroke-width="3"/><path d="M450 80l60 -20M470 120l120 -50" stroke="#c4d3d6" stroke-width="6" opacity=".6"/>'+
+    '<rect x="0" y="470" width="1000" height="30" fill="#edf0f0"/><rect x="0" y="500" width="1000" height="180" fill="#8b7e71"/>'+
+    '<line x1="660" y1="500" x2="660" y2="680" stroke="#6e645a" stroke-width="3"/><circle cx="636" cy="560" r="6" fill="#d8d1c6"/><circle cx="684" cy="560" r="6" fill="#d8d1c6"/>'+
+    '<rect x="240" y="300" width="90" height="12" rx="6" fill="#bfc6c9"/><rect x="250" y="312" width="70" height="140" rx="10" fill="#f1e9df" opacity=".9"/>'+
+    '<ellipse cx="660" cy="455" rx="240" ry="75" fill="#f6f8f8" stroke="#c1c8ca" stroke-width="3"/><ellipse cx="660" cy="462" rx="198" ry="54" fill="#dde3e4"/>'+
+    '<rect x="624" y="332" width="72" height="14" rx="7" fill="#c8ced1" stroke="#97a1a5" stroke-width="2"/><rect x="644" y="344" width="32" height="50" rx="6" fill="#d3d9dc" stroke="#97a1a5" stroke-width="2"/><rect x="652" y="384" width="16" height="30" rx="6" fill="#c2c9cc"/>'+
+    '<ellipse cx="660" cy="468" rx="182" ry="45" fill="#7d938b" opacity=".92"/><ellipse cx="660" cy="470" rx="18" ry="7" fill="#99a5a6"/><path d="M560 474q20 -6 40 0M708 482q24 -8 48 0M600 456q14 -4 28 0" stroke="#a7b8b1" stroke-width="3" fill="none"/>'+
+    '<rect width="1000" height="680" fill="url(#vig)"/><rect width="1000" height="680" fill="#000" opacity=".38"/>';
+  function view(card){
+    var inner=card.svg.replace('<svg ','<svg x="360" y="40" ');
+    return '<svg class="view" viewBox="0 0 1000 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+card.name+' over the sink">'+SCENE+'<g style="mix-blend-mode:screen">'+inner+'</g></svg>';
+  }
+  var cards=window.SINK_CARDS, groups={}, order=[];
+  cards.forEach(function(c){if(!groups[c.group]){groups[c.group]=[];order.push(c.group);}groups[c.group].push(c);});
+  document.getElementById('count').textContent=cards.length+' cards · click one to enlarge';
+  var html='';
+  order.forEach(function(g){
+    html+='<section><h2>'+g+'</h2><div class="grid">';
+    groups[g].forEach(function(c){
+      html+='<figure><button class="tile" type="button" data-id="'+c.id+'" aria-label="Enlarge '+c.name+'">'+view(c)+'<span class="solo">'+c.svg.replace('<svg ','<svg style="width:100%;height:100%" ')+'</span></button>'+
+        '<figcaption><b>'+String(c.no).padStart(2,'0')+' · '+c.name+'</b><span class="file">'+c.base+'.svg · .png</span>'+
+        '<span class="cue"><span>Motion</span><span>'+c.motion+'</span></span>'+
+        '<span class="cue"><span>Sound</span><span>'+c.earcon+'</span></span>'+(c.voice?'<span class="cue"><span>Voice</span><span>'+c.voice+'</span></span>':'')+'</figcaption></figure>';
+    });
+    html+='</div></section>';
+  });
+  document.getElementById('groups').innerHTML=html;
+
+  var dlg=document.getElementById('dlg');
+  document.getElementById('groups').addEventListener('click',function(e){
+    var b=e.target.closest('.tile');if(!b)return;
+    var c=cards.find(function(x){return x.id===b.dataset.id;});
+    var png=document.body.classList.contains('png');
+    document.getElementById('bigView').innerHTML=png?'<div style="background:repeating-conic-gradient(#2a3036 0 25%,#1d2227 0 50%) 0 0/32px 32px;max-width:640px;margin:0 auto">'+c.svg.replace('<svg ','<svg style="width:100%;height:auto;display:block" ')+'</div>':view(c);
+    document.getElementById('bigCap').textContent=c.name+' · '+c.file+' · '+c.earcon+(c.voice?' · '+c.voice:'');
+    if(dlg.showModal)dlg.showModal();
+  });
+  document.getElementById('close').onclick=function(){dlg.close();};
+  dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});
+  function setMode(png){document.body.classList.toggle('png',png);document.getElementById('vView').setAttribute('aria-pressed',!png);document.getElementById('vPng').setAttribute('aria-pressed',png);}
+  document.getElementById('vView').onclick=function(){setMode(false);};
+  document.getElementById('vPng').onclick=function(){setMode(true);};
+})();
+</script>
