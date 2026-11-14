@@ -7,7 +7,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 | Criterion | Decisions to cite |
 |---|---|
 | Meta: Creativity & use case | D1, D2, D16 |
-| Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14, D20 |
+| Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14, D20, D23 |
 | Meta: Real-world value & feasibility | D1, D16, D17, D22 |
 | Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19, D21 |
 | Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
@@ -157,3 +157,11 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - **The whole knowledge pack goes into the coach's instructions** (one job's knowledge fits; no RAG needed). Tested: "why hold the trap body?" → the sourced reason; "I live in an apartment" → mentions the housing company.
 - **Pilot insight:** since 2019 Kiinteistöliitto says sink-trap cleaning in apartment buildings is the housing company's job, because badly refitted traps cause water damage → housing companies and maintenance firms (like our HVAC business) are a natural pilot customer.
 - **Criterion:** Real-world value & feasibility, Trust.
+
+### D23 · What changed on the real glasses (Sat night, filming at home)
+- **Call mode → media mode:** using the glasses' mic needs Bluetooth headset ("call") mode; Android and the glasses then show a **call screen that hides our display**, and call audio is narrowband (the coach misheard). Now: **user's voice via the phone mic, coach via the glasses as media audio, display stays visible.** Proper glasses-mic audio needs Meta's in-stream audio (beta) → roadmap.
+- **Display lag:** every update sent a 600 px image over Bluetooth and updates queued → now only the **latest** card is sent (conflate) at **300 px**.
+- **Speech detection:** "less sensitive" (set for the noisy venue) missed a muffled pocket mic → sensitive by default, `LIVE_VAD=low` at the venue.
+- **Wrong procedure:** the app's Sink button started the U-pipe procedure on a bottle trap → now `bottle_trap`; a "Start sink procedure" button works while the coach is on, and the coach introduces step 1.
+- **Honest trade-off for Q&A:** the phone stays close (pocket/counter) because the mic is on the phone for now.
+- **Criterion:** Technical execution (device constraints, performance), UX.
