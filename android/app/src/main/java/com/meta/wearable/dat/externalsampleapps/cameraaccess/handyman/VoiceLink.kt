@@ -97,6 +97,16 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
       return false
     }
     record = rec
+    // MEDIA: force the phone's own microphone. Otherwise Android (seen on OnePlus) prefers the
+    // connected glasses as a Bluetooth headset mic, which only works in call mode (SCO) → silence.
+    if (media) {
+      val builtIn =
+          (context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager)
+              .getDevices(android.media.AudioManager.GET_DEVICES_INPUTS)
+              .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+      val ok = builtIn != null && rec.setPreferredDevice(builtIn)
+      Log.i(TAG, "mic: phone built-in mic ${if (ok) "selected" else "NOT found / not set"}")
+    }
     // Best effort: the phone mic may still pick up the coach from the glasses' open speakers.
     if (media && android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
       runCatching { android.media.audiofx.AcousticEchoCanceler.create(rec.audioSessionId)?.enabled = true }
