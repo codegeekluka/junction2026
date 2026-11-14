@@ -3,7 +3,18 @@
 // v2 (Sat): v1 was too rigid. It refused to help with anything but a sink and
 // misread "I don't have a sink yet" as "no sink installed".
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { taskSummaries } from './tasks.js';
+
+// Sourced background knowledge (docs/knowledge/*.md), given to the coach in full.
+// One job's knowledge fits easily in the context, so no retrieval system is needed (D21).
+const KNOWLEDGE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../docs/knowledge');
+const KNOWLEDGE = fs.existsSync(KNOWLEDGE_DIR)
+  ? fs.readdirSync(KNOWLEDGE_DIR).filter((f) => f.endsWith('.md'))
+      .map((f) => fs.readFileSync(path.join(KNOWLEDGE_DIR, f), 'utf8')).join('\n\n')
+  : '';
 
 const TASK_LIST = taskSummaries().map((t) => `- ${t.id}: ${t.title} (${t.steps} steps). Use when: ${t.when}`).join('\n');
 
@@ -84,6 +95,11 @@ ${TASK_LIST}
 - If the user explicitly asks to skip a step, call skip_step (safety steps can't be skipped).
 - To answer "what step am I on?" or "is it done?", call get_task_status.
 
+- Bathroom basins in Finland usually have a BOTTLE trap (cylinder with a screw-off bottom cup);
+  kitchens often a U-shaped pipe. Pick the procedure that matches what you see, or call diagnose.
+- In an apartment building, mention once (briefly) that the housing company (huoltoyhtiö) can also
+  do this for them, since badly refitted traps can cause water damage.
+
 Reference for the sink trap job (background knowledge; the procedure drives the order):
 1. Identify the trap and the two slip nuts. Plastic or metal?
 2. Bucket under the trap. Towel down.
@@ -94,4 +110,8 @@ Reference for the sink trap job (background knowledge; the procedure drives the 
 5. Clean the trap.
 6. Refit: washers the same way round, nuts hand-tight plus a quarter turn. Don't overtighten plastic.
 7. Run water and check every joint for drips.
+
+SOURCED KNOWLEDGE PACK (background reading for "why?" / "what if?" questions; use it, cite it
+only if asked, e.g. "Hansgrohe's instructions say…"; never read it out wholesale):
+${KNOWLEDGE}
 `.trim();

@@ -71,8 +71,11 @@ export class DiagnosisRunner {
       this.last = problem.choice;
       if (this.streak >= CONSECUTIVE) {
         this.finished = true;
+        // Which expert procedure? For drain problems the trap type decides.
+        let procedure = branch.procedure;
+        if (procedure === 'by_trap') procedure = answers?.trap_type?.choice === 'u_pipe' ? 'ptrap' : 'bottle_trap';
         events.push({ kind: 'diagnosed', problem: problem.choice, label: branch.label, p: problem.confidence,
-          procedure: branch.procedure, nothingWrong: Boolean(branch.nothingWrong), showMe: branch.showMe ?? null });
+          procedure, nothingWrong: Boolean(branch.nothingWrong), showMe: branch.showMe ?? null });
       }
       return { events, headline };
     }

@@ -101,3 +101,15 @@ body.running.watching .viewport { aspect-ratio: 16 / 9; }
 #hud { grid-template-columns: 1fr; }
 #hud:has(#hud-card:not([hidden])) { grid-template-columns: 120px 1fr; column-gap: 14px; }
 #hud-card { grid-row: 1 / span 4; width: 120px; height: 120px; border-radius: 12px; background: #000; align-self: center; }
+
+/* Glance layout: short instruction (big), tip, status line; full spoken text small */
+.hud-short { font-size: 1.25rem; font-weight: 700; }
+.hud-tip { color: #ffd23f; font-size: 0.95rem; }
+.hud-tip:empty, .hud-short:empty, .hud-status:empty { display: none; }
+.hud-status { font-weight: 700; color: #4ea8ff; }
+.hud-status[data-state="mistake"] { color: var(--bad); }
+.hud-status[data-state="finished"], .hud-status[data-state="diagnosed"] { color: #5ad17a; }
+.hud-status[data-state="unsure"], .hud-status[data-state="cant_see"] { color: #ffd23f; }
+.hud-say { color: var(--muted); font-size: 0.85rem; }
+#hud { grid-template-rows: auto; }
+#hud-card { grid-row: 1 / span 6; }

@@ -147,23 +147,61 @@ class GlassesDisplay(
    * otherwise the text card.
    */
   private fun ContentScope.cardContent(card: Card) {
+    val hud = card.hud
     val image = cards.get(card.cardId)
-    if (image != null) {
-      imageCardContent(card, image)
-      return
+    val doingAStep =
+        hud != null && card.hasTask && card.link == Link.CONNECTED && card.cardId != "offline" &&
+            hud.state !in setOf("finished", "stopped", "diagnosing", "diagnosed")
+    when {
+      doingAStep -> glanceContent(hud!!, image)
+      image != null -> imageCardContent(card, image)
+      else -> textCardContent(card)
     }
-    textCardContent(card)
   }
 
+  /**
+   * The glanceable step layout (docs/protocol.md): progress at the top, the designer card in the
+   * middle, the short instruction in large text, the tip small, the status line at the bottom.
+   * The voice says the long version.
+   */
+  private fun ContentScope.glanceContent(hud: Hud, image: Bitmap?) {
+    flexBox(direction = Direction.COLUMN, gap = 8, padding = 16) {
+      val progress =
+          listOfNotNull(hud.step?.let { "Step $it" }, if (hud.gate) "Safety" else null).joinToString(" · ")
+      if (progress.isNotEmpty()) text(progress, style = TextStyle.META, color = TextColor.SECONDARY)
+      image?.let { image(bitmap = it, sizePreset = ImageSize.FILL, flexShrink = 1f) }
+      (hud.short ?: hud.title)?.let { text(it, style = TextStyle.HEADING) }
+      if (hud.state == "mistake" && hud.warning != null) {
+        text("⚠ ${hud.warning}", style = TextStyle.BODY) // a warning replaces the tip
+      } else {
+        hud.tip?.let { text(it, style = TextStyle.META, color = TextColor.SECONDARY) }
+      }
+      statusLine(hud)?.let { text(it, style = TextStyle.BODY, color = TextColor.SECONDARY) }
+    }
+  }
+
+  /** The server's status line, or one derived from the state for older servers. */
+  private fun statusLine(hud: Hud): String? =
+      hud.status
+          ?: when (hud.state) {
+            "mistake" -> "⚠ Stop"
+            "unsure" -> "? Show me another angle"
+            "cant_see" -> "Can't see: more light"
+            else -> hud.verified?.let { "✓ $it" }
+          }
+
+  /** Cards without a step: ready, offline, diagnosis, job done. Image plus a short caption. */
   private fun ContentScope.imageCardContent(card: Card, image: Bitmap) {
     val hud = card.hud
-    flexBox(direction = Direction.COLUMN, gap = 8) {
-      val step = hud?.step?.takeIf { card.hasTask && card.cardId != "offline" && hud.state != "finished" }
-      step?.let { text("Step $it", style = TextStyle.META, color = TextColor.SECONDARY) }
-      image(bitmap = image, sizePreset = ImageSize.FILL)
-      when (hud?.state) {
-        "mistake" -> hud.warning?.let { text("⚠ $it", style = TextStyle.BODY) }
-        "unsure" -> hud.warning?.let { text("? $it", style = TextStyle.BODY) }
+    flexBox(direction = Direction.COLUMN, gap = 8, padding = 16) {
+      image(bitmap = image, sizePreset = ImageSize.FILL, flexShrink = 1f)
+      when {
+        card.cardId == "offline" || card.cardId == "ready" -> Unit // the card carries its own label
+        hud?.state == "diagnosing" || hud?.state == "diagnosed" -> {
+          hud.title?.let { text(it, style = TextStyle.HEADING) }
+          (hud.status ?: hud.say)?.let { text(it, style = TextStyle.BODY, color = TextColor.SECONDARY) }
+        }
+        hud != null -> statusLine(hud)?.let { text(it, style = TextStyle.BODY, color = TextColor.SECONDARY) }
       }
     }
   }

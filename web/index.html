@@ -34,6 +34,9 @@
       <img id="hud-card" alt="" width="120" height="120" hidden />
       <p class="hud-task" id="hud-task"></p>
       <p class="hud-step"><span id="hud-step"></span> <span id="hud-title"></span></p>
+      <p class="hud-short" id="hud-short"></p>
+      <p class="hud-tip" id="hud-tip"></p>
+      <p class="hud-status" id="hud-status"></p>
       <p class="hud-say" id="hud-say"></p>
       <p class="hud-note" id="hud-note"></p>
     </section>
@@ -84,8 +87,10 @@
       <summary>Debug</summary>
       <p>Frames sent: <span id="frames">0</span> · Rate: <span id="fps">0.5</span> fps (set by server) · Upload: <span id="upload">–</span> KB/min · Source: <span id="source">phone camera</span></p>
       <button type="button" id="sim-drop">Simulate connection drop</button>
+      <a href="/debug/drop" target="_blank">Drop ALL sessions (incl. the glasses app)</a>
       <button type="button" data-task="bottle_demo">Start bottle practice</button>
-      <button type="button" data-task="ptrap">Start sink procedure</button>
+      <button type="button" data-task="bottle_trap">Start bottle-trap procedure</button>
+      <button type="button" data-task="ptrap">Start U-pipe procedure</button>
       <button type="button" data-diagnose="sink">Diagnose sink</button>
     </details>
   </main>

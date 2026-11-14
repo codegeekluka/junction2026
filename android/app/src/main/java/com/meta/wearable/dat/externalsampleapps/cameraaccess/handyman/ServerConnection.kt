@@ -42,6 +42,10 @@ data class Hud(
     val warning: String? = null,
     val card: String? = null, // designer card id (design/glasses-ui), e.g. "step-2-bucket"
     val cardUrl: String? = null, // path on the server, e.g. "/cards/12-step-2-bucket.png"
+    // Glanceable display fields (docs/protocol.md): the main text, an optional detail, a status line.
+    val short: String? = null, // the instruction in ≤ 6 words, e.g. "Both nuts left, by hand"
+    val tip: String? = null, // optional detail, e.g. "Washer: flat side to the nut"
+    val status: String? = null, // "👁 Watching…" · "✓ Done" · "⚠ Stop" · "? Show me another angle"
 )
 
 enum class CoachState { OFF, CONNECTING, LIVE, RECONNECTING, OFFLINE }
@@ -278,6 +282,9 @@ class ServerConnection(
           warning = msg.optNullableString("warning"),
           card = msg.optNullableString("card"),
           cardUrl = msg.optNullableString("cardUrl"),
+          short = msg.optNullableString("short"),
+          tip = msg.optNullableString("tip"),
+          status = msg.optNullableString("status"),
       )
 }
 
