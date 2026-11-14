@@ -85,6 +85,7 @@ import com.meta.wearable.dat.core.types.RegistrationState
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.camera.CameraUiState
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.camera.CameraViewModel
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.GlassesPreview
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.HandymanPanel
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.wearables.WearablesViewModel
 
@@ -113,6 +114,7 @@ fun CameraScreen(
   val ui by cameraViewModel.uiState.collectAsStateWithLifecycle()
   val wearablesUi by wearablesViewModel.uiState.collectAsStateWithLifecycle()
   val serverUi by cameraViewModel.server.state.collectAsStateWithLifecycle()
+  val displayStatus by cameraViewModel.glassesDisplay.status.collectAsStateWithLifecycle()
   val activity = LocalActivity.current
   var showSettingsMenu by remember { mutableStateOf(false) }
 
@@ -157,6 +159,12 @@ fun CameraScreen(
           isStreaming = ui.isStreaming,
           onStartBottle = { cameraViewModel.server.startTask("bottle_demo") },
           onStop = { cameraViewModel.server.stop() },
+      )
+
+      // Handyman: live view of the simulated glasses display (mock Ray-Ban Display only).
+      GlassesPreview(
+          displayStatus = displayStatus,
+          modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp),
       )
 
       Spacer(modifier = Modifier.weight(1f))

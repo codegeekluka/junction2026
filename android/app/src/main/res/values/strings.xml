@@ -90,7 +90,7 @@
     <string name="mock_device_kit_description" description="MockDeviceKit description">This screen simulates devices and mocks their capabilities and states.</string>
     <string name="enable_mock_device_kit" description="Enable MockDeviceKit button">Enable MockDeviceKit</string>
     <string name="disable_mock_device_kit" description="Disable MockDeviceKit button">Disable MockDeviceKit</string>
-    <string name="pair_rayban_meta" description="Pair Ray-Ban Meta">Pair Ray-Ban Meta</string>
+    <string name="pair_rayban_meta" description="Pair Ray-Ban Meta">Pair Ray-Ban Display</string>
     <string name="unpair" description="Unpair">Unpair</string>
     <string name="select_image" description="Select image">Select image</string>
     <string name="has_captured_image" description="Has captured image">Has captured image</string>

@@ -19,6 +19,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.MockPreview
 import com.meta.wearable.dat.mockdevice.MockDeviceKit
 import com.meta.wearable.dat.mockdevice.api.GlassesModel
 import com.meta.wearable.dat.mockdevice.api.MockGlasses
@@ -47,18 +48,21 @@ class MockDeviceKitViewModel(private val application: Application) : AndroidView
   }
 
   fun disable() {
+    MockPreview.onUnpaired(application, null)
     mockDeviceKit.disable()
     _uiState.update { it.copy(isEnabled = false, pairedDevices = emptyList()) }
   }
 
-  // Create a simulated Ray-Ban Meta glasses device
+  // Create a simulated glasses device. Handyman: the Meta Ray-Ban DISPLAY model (camera + a
+  // 600x600 display), so the step card can be previewed in-app and in Chrome (see MockPreview).
   fun pairGlasses() {
     viewModelScope.launch {
-      Log.d(TAG, "Pairing RayBan Meta device")
+      Log.d(TAG, "Pairing Ray-Ban Display device")
       mockDeviceKit
-          .pairGlasses(GlassesModel.RAYBAN_META)
+          .pairGlasses(GlassesModel.META_RAYBAN_DISPLAY)
           .fold(
               onSuccess = { mockDevice ->
+                MockPreview.onPaired(application, mockDevice)
                 val deviceName = application.getString(R.string.mock_device_name)
                 val deviceInfo = MockDeviceInfo(
                     device = mockDevice,
@@ -79,6 +83,7 @@ class MockDeviceKitViewModel(private val application: Application) : AndroidView
     viewModelScope.launch {
       try {
         Log.d(TAG, "Unpairing device with ID: ${deviceInfo.deviceId}")
+        MockPreview.onUnpaired(application, deviceInfo.device)
         mockDeviceKit.unpairDevice(deviceInfo.device)
         _uiState.update { currentState ->
           currentState.copy(pairedDevices = currentState.pairedDevices - deviceInfo)

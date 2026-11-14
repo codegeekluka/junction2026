@@ -43,6 +43,7 @@ import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.FrameGrabber
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.GlassesDisplay
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.ServerConnection
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.AudioInputHandler
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.HevcDecoder
@@ -128,6 +129,7 @@ class CameraViewModel(
 
   // Handyman: link to our backend, plus the latest stream size for the frame grabber.
   val server = ServerConnection(viewModelScope)
+  val glassesDisplay = GlassesDisplay(viewModelScope, server.state)
   @Volatile private var streamWidth = 0
   @Volatile private var streamHeight = 0
 
@@ -250,7 +252,10 @@ class CameraViewModel(
     sessionStateJob = viewModelScope.launch {
       session.state.collect { state ->
         _uiState.update { it.copy(sessionState = state) }
+        // Handyman: the glasses display (step card) lives as long as the session.
+        if (state == DeviceSessionState.STARTED) glassesDisplay.attach(session)
         if (state == DeviceSessionState.STOPPED) {
+          glassesDisplay.detach()
           cleanupSession()
         }
       }
@@ -718,6 +723,7 @@ class CameraViewModel(
 
   override fun onCleared() {
     super.onCleared()
+    glassesDisplay.detach()
     server.stop()
     clearStreamResources()
     session?.stop()

@@ -73,6 +73,7 @@ dependencies {
   implementation(libs.kotlinx.collections.immutable)
   implementation(libs.mwdat.core)
   implementation(libs.mwdat.camera)
+  implementation(libs.mwdat.display)
   implementation(libs.mwdat.mockdevice)
   implementation(libs.okhttp)
   androidTestImplementation(libs.androidx.ui.test.junit4)
