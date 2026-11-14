@@ -8,25 +8,27 @@
 export const QUESTION_SETS = {
   // Google booth advice: start trivially simple to prove live streaming works.
   bottle: {
+    // "The bottle" = the one on the table in front of the camera. Lesson from session 2:
+    // background bottles made "out of view" read as "standing".
     bottle_visible: {
-      label: 'Bottle in view',
+      label: 'Bottle in front of the camera',
       type: 'noul',
-      instructions: 'Is a bottle clearly visible in the image?',
+      instructions: 'Is there a bottle in the foreground, on the table or surface directly in front of the camera, within reach? Ignore anything in the background (other tables, shelves, far away). Cups, mugs and cans do not count.',
     },
     bottle_upright: {
-      label: 'Bottle standing upright',
+      label: 'Standing upright',
       type: 'noul',
-      instructions: 'Is the bottle standing upright on its base (not lying on its side or tipped over)?',
+      instructions: 'Is the foreground bottle standing upright on its base on the surface? A hand touching or gripping it still counts as standing if its base is on the surface.',
     },
     bottle_state: {
       label: 'Bottle state',
       type: 'choice',
-      instructions: 'What best describes the bottle in the image?',
+      instructions: 'Looking only at the foreground, on the table or surface directly in front of the camera (ignore the background): what best describes the bottle?',
       criteria: {
-        standing: 'A bottle standing upright on its base',
-        fallen: 'A bottle lying on its side or tipped over',
-        held: 'A bottle being held in a hand',
-        none: 'No bottle is visible',
+        standing: 'A bottle standing upright with its base on the surface (even if a hand is touching or gripping it)',
+        fallen: 'A bottle lying on its side or tipped over on the surface',
+        held: 'A bottle lifted up off the surface in a hand',
+        none: 'No bottle in the foreground (bottles far away in the background, cups, mugs and cans do not count)',
       },
     },
     image_quality: {
@@ -72,8 +74,10 @@ export const QUESTION_SETS = {
 export const HEADLINES = {
   bottle: {
     question: 'bottle_state',
+    // Decision tree: the state only counts if the gate says a bottle is there at all.
+    gate: { question: 'bottle_visible', absent: 'none' },
     title: 'The bottle is…',
-    labels: { standing: 'Standing up', fallen: 'Fallen over', held: "In someone's hand", none: 'Not in view' },
+    labels: { standing: 'Standing up', fallen: 'Fallen over', held: 'Lifted in a hand', none: 'Not in view' },
   },
   sink_start: {
     question: 'problem',

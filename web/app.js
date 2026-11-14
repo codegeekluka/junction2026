@@ -140,7 +140,7 @@ function renderDecision(msg) {
     pushHistory({ err: true });
     return;
   }
-  const head = msg.answers?.[watch.headline.question];
+  const head = msg.headline ?? msg.answers?.[watch.headline.question]; // server-combined verdict (decision tree)
   if (head) {
     const [level, text] = certainty(head.confidence);
     const verdict = watch.headline.labels[head.choice] ?? head.choice;

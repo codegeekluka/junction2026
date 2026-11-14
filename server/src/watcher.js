@@ -68,6 +68,7 @@ export class Watcher {
         ms: Math.round(performance.now() - t0),
         stale: this.frameSeq - seq, // frames that arrived while we waited
         answers: res.answers,
+        headline: headline(this.setName, res.answers),
       };
       this.lastDecision = msg;
       this.lastFrameUsed = frame;
@@ -101,6 +102,29 @@ export class Watcher {
     this.stop();
     this.frame = null;
   }
+}
+
+// Combine answers into the one verdict the user sees (a tiny decision tree):
+// if the set has a gate ("is a bottle there at all?"), the gate decides presence first;
+// if the gate and the multiple-choice answer disagree, certainty drops to "not sure".
+export function headline(setName, answers) {
+  const h = HEADLINES[setName];
+  const main = answers?.[h?.question];
+  if (!main) return null;
+  if (!h.gate) return { choice: main.choice, confidence: main.confidence };
+  const gate = answers[h.gate.question];
+  if (!gate) return { choice: main.choice, confidence: main.confidence };
+  const present = gate.noul >= 0.5;
+  if (!present) {
+    // Gate says absent. If the choice agrees, take the stronger certainty; otherwise unsure.
+    const agrees = main.choice === h.gate.absent;
+    return { choice: h.gate.absent, confidence: agrees ? Math.max(gate.confidence, main.confidence) : Math.min(gate.confidence, 0.55), conflict: !agrees };
+  }
+  if (main.choice === h.gate.absent) {
+    // Gate says present but the choice says absent: say we're unsure.
+    return { choice: main.choice, confidence: Math.min(main.confidence, 0.55), conflict: true };
+  }
+  return { choice: main.choice, confidence: Math.min(main.confidence, gate.confidence) };
 }
 
 // Strip our UI-only fields (label) before sending: the API validates question fields.

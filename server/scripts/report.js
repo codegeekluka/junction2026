@@ -28,7 +28,8 @@ console.log(`Checks: ${ok.length} ok, ${errors.length} failed (${errors.map((e) 
 console.log(`Latency ms: min ${ms[0] ?? '-'} · median ${pct(ms, 0.5)} · p90 ${pct(ms, 0.9)} · max ${ms.at(-1) ?? '-'}`);
 
 if (head) {
-  const seq = ok.map((d) => d.answers?.[head]).filter(Boolean);
+  const seq = ok.map((d) => d.headline ?? d.answers?.[head]).filter(Boolean);
+  const conflicts = seq.filter((a) => a.conflict).length;
   const conf = seq.map((a) => a.confidence);
   const bands = { sure: conf.filter((c) => c >= 0.75).length, maybe: conf.filter((c) => c >= 0.6 && c < 0.75).length, unsure: conf.filter((c) => c < 0.6).length };
   let changes = 0, flickers = 0;
@@ -40,7 +41,7 @@ if (head) {
   seq.forEach((a) => (counts[a.choice] = (counts[a.choice] ?? 0) + 1));
   console.log(`Headline "${head}": ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
   console.log(`Certainty: very sure ${bands.sure} · fairly sure ${bands.maybe} · not sure ${bands.unsure}`);
-  console.log(`Answer changes: ${changes} · flickers (A→B→A): ${flickers}`);
+  console.log(`Answer changes: ${changes} · flickers (A→B→A): ${flickers} · gate conflicts: ${conflicts}`);
   console.log('Timeline:', seq.map((a) => (a.confidence < 0.6 ? a.choice[0] : a.choice[0].toUpperCase())).join(''), '(capital = sure)');
 }
 
@@ -49,7 +50,7 @@ if (fb.length) {
   const right = fb.filter((f) => f.correct).length;
   console.log(`\nFeedback: ${right}/${fb.length} marked right (${Math.round((100 * right) / fb.length)}%)`);
   for (const f of fb.filter((x) => !x.correct)) {
-    const a = f.answers?.[head];
+    const a = f.headline ?? f.answers?.[head];
     console.log(`  WRONG: said "${a?.choice}" (${a ? Math.round(a.confidence * 100) : '?'}%), actually "${f.expected}" · frame: ${f.frame ? path.join(dir, f.frame) : 'none'}`);
     if (a?.probabilities) console.log(`         probabilities: ${Object.entries(a.probabilities).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(', ')}`);
   }

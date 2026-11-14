@@ -39,12 +39,12 @@ export class Recorder {
     if (!this.enabled) return;
     const n = ++this.n;
     const frame = ALL_FRAMES && frameB64 ? this.#saveFrame(frameB64, `d${String(n).padStart(4, '0')}`) : undefined;
-    this.#write({ ev: 'decision', n, set: msg.set, ms: msg.ms, error: msg.error, stale: msg.stale, answers: msg.answers, frame });
+    this.#write({ ev: 'decision', n, set: msg.set, ms: msg.ms, error: msg.error, stale: msg.stale, answers: msg.answers, headline: msg.headline, frame });
   }
   feedback(fb, lastDecision, frameB64) {
     if (!this.enabled) return;
     const frame = frameB64 ? this.#saveFrame(frameB64, `fb${String(this.n).padStart(4, '0')}_${Date.now() % 100000}`) : undefined;
     this.#write({ ev: 'feedback', correct: fb.correct, expected: fb.expected, note: fb.note,
-      decision_n: this.n, answers: lastDecision?.answers, frame });
+      decision_n: this.n, answers: lastDecision?.answers, headline: lastDecision?.headline, frame });
   }
 }
