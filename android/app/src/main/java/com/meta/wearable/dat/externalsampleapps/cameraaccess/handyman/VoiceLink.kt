@@ -10,8 +10,8 @@
 //    Developer Mode), pushed in via [onGlassesAudio]. Playback is normal MEDIA audio, which goes to
 //    the glasses over A2DP (better quality than call audio). No call mode → no call screen.
 //  - Mock Device Kit / no glasses audio yet: the phone's own mic and speaker, also without call mode.
-// In-stream audio has no echo cancellation: while the coach is speaking we only pass loud chunks
-// (the wearer talking over it = barge-in), so the coach does not hear its own echo and cut itself off.
+// In-stream audio has no echo cancellation, so on the glasses mic we don't send while the coach is
+// speaking (plus a short tail); otherwise the coach would hear itself and cut itself off.
 
 package com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman
 
@@ -44,26 +44,8 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
     private const val MIC_RATE = 16_000 // docs/protocol.md: audio in = 16 kHz
     private const val SPEAKER_RATE = 24_000 // audio out = 24 kHz
     private const val CHUNK_BYTES = 3_200 // 100 ms at 16 kHz, 16-bit mono
-    private const val ECHO_TAIL_MS = 400L // treat the coach as "still talking" this long after it stops
-    // Barge-in: while the coach talks, a 100 ms chunk at least this loud (16-bit RMS) counts as the
-    // wearer speaking. Tune on the real glasses: lower = easier to interrupt, higher = less echo.
-    private const val BARGE_IN_RMS = 1_200.0
-    private const val BARGE_IN_HOLD_MS = 1_500L // keep the mic open this long after a loud chunk
-
-    /** Root-mean-square level of 16-bit little-endian PCM. */
-    private fun rms(pcm: ByteArray, length: Int): Double {
-      var sum = 0.0
-      var i = 0
-      while (i + 1 < length) {
-        val s = ((pcm[i + 1].toInt() shl 8) or (pcm[i].toInt() and 0xFF)).toShort().toDouble()
-        sum += s * s
-        i += 2
-      }
-      return kotlin.math.sqrt(sum / (length / 2).coerceAtLeast(1))
-    }
+    private const val ECHO_TAIL_MS = 400L // keep the glasses mic muted this long after the coach stops
   }
-
-  @Volatile private var lastLoudAt = 0L
 
   private val context = context.applicationContext
 
@@ -133,14 +115,8 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
         val all = glassesChunk.toByteArray()
         glassesChunk.reset()
         glassesChunk.write(all, CHUNK_BYTES, all.size - CHUNK_BYTES)
-        // No echo cancellation on this path. While the coach talks, only pass chunks loud enough to be
-        // the wearer speaking (the mic is next to the mouth; the coach's echo is much quieter), and
-        // keep passing for a moment after, so a barge-in ("wait, stop") gets through whole.
-        val now = SystemClock.elapsedRealtime()
-        if (rms(all, CHUNK_BYTES) >= BARGE_IN_RMS) lastLoudAt = now
-        if (!coachSpeaking() || now - lastLoudAt < BARGE_IN_HOLD_MS) {
-          sendAudio(Base64.encodeToString(all, 0, CHUNK_BYTES, Base64.NO_WRAP))
-        }
+        // No echo cancellation on this path: stay quiet while the coach is talking.
+        if (!coachSpeaking()) sendAudio(Base64.encodeToString(all, 0, CHUNK_BYTES, Base64.NO_WRAP))
       }
     }
   }
