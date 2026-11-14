@@ -12,7 +12,7 @@ import { QUESTION_SETS, HEADLINES, QUALITY_QUESTION } from './questions.js';
 import { STEP_HEADLINE } from './task-runner.js';
 
 const MODEL = 'gemini-decision-1';
-const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 1000);
+const INTERVAL_MS = Number(process.env.WATCH_INTERVAL_MS || 450); // ~2 checks/s (frames arrive at ~2 fps)
 const TIMEOUT_MS = 3000;
 
 export class Watcher {

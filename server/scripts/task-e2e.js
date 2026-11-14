@@ -21,7 +21,7 @@ ws.on('message', (raw) => {
   const m = JSON.parse(raw);
   if (m.type === 'status' && m.state === 'live' && !started) {
     started = true;
-    setInterval(() => ws.send(JSON.stringify({ type: 'frame', data: frame })), 1000);
+    setInterval(() => ws.send(JSON.stringify({ type: 'frame', data: frame })), 500);
     setTimeout(() => { console.log(`${at()} YOU: Let's do the bottle practice.`); ws.send(JSON.stringify({ type: 'text', text: "Let's do the bottle practice." })); }, 2000);
   }
   if (m.type === 'hud') {

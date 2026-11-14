@@ -1,7 +1,7 @@
 // Plan B client: phone camera + mic -> backend (/live) -> Gemini Live -> coach voice.
 // The glasses app (Device Access Toolkit) will speak the same WebSocket protocol.
 
-const FRAME_INTERVAL_MS = 1000; // Live API takes ≤ 1 fps
+const FRAME_INTERVAL_MS = 500; // ~2 fps: the inspector checks twice a second; the server passes ≤ 1 fps to Live
 const FRAME_WIDTH = 768;
 const JPEG_QUALITY = 0.7;
 

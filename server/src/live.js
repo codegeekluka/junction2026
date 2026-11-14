@@ -2,7 +2,7 @@
 // Handles: 2-min video limit (context compression), ~10-min connection limit and
 // network drops (session resumption), interruptions, transcripts.
 
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI, Modality, StartSensitivity } from '@google/genai';
 import { SYSTEM_PROMPT } from './prompt.js';
 
 const MODEL = process.env.LIVE_MODEL || 'gemini-3.8-live';
@@ -48,6 +48,9 @@ export class CoachSession {
     this.reconnecting = false;
     this.latestFrame = null;   // base64 JPEG, kept in memory only (for tools later)
     this.gen = 0;              // connection generation; ignore events from stale sessions
+    this.speaking = false;     // coach is mid-utterance
+    this.pendingNote = null;   // non-urgent inspector note waiting for the coach to finish
+    this.lastFrameAt = 0;
     /** Tool handler set by the orchestrator: async (name, args) => result object */
     this.onTool = async (name) => ({ error: `tool ${name} not available` });
   }
@@ -73,6 +76,9 @@ export class CoachSession {
           tools: [{ googleSearch: {} }, { functionDeclarations: TOOL_DECLARATIONS }],
           contextWindowCompression: { slidingWindow: {} }, // lifts the 2-min audio+video cap
           sessionResumption: { handle: this.handle },       // survive drops / 10-min connection limit
+          // Default is HIGH sensitivity: in a loud hall, background noise counted as the user
+          // speaking and cut the coach off mid-sentence.
+          realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW } },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
           speechConfig: {
@@ -124,13 +130,17 @@ export class CoachSession {
     }
     const sc = m.serverContent;
     if (sc) {
-      if (sc.interrupted) this.send({ type: 'interrupted' });
+      if (sc.interrupted) { this.speaking = false; this.send({ type: 'interrupted' }); }
       for (const part of sc.modelTurn?.parts ?? []) {
-        if (part.inlineData?.data) this.send({ type: 'audio', data: part.inlineData.data });
+        if (part.inlineData?.data) { this.speaking = true; this.send({ type: 'audio', data: part.inlineData.data }); }
       }
       if (sc.inputTranscription?.text) this.send({ type: 'transcript', who: 'user', text: sc.inputTranscription.text });
       if (sc.outputTranscription?.text) this.send({ type: 'transcript', who: 'coach', text: sc.outputTranscription.text });
-      if (sc.turnComplete) this.send({ type: 'turnComplete' });
+      if (sc.turnComplete) {
+        this.speaking = false;
+        this.send({ type: 'turnComplete' });
+        if (this.pendingNote) { const n = this.pendingNote; this.pendingNote = null; setTimeout(() => this.#sendNote(n), 400); }
+      }
     }
     if (m.toolCall?.functionCalls?.length) this.#handleTools(m.toolCall.functionCalls);
   }
@@ -147,8 +157,21 @@ export class CoachSession {
     this.session?.sendToolResponse({ functionResponses });
   }
 
-  /** A verified observation from the watcher. The coach turns it into one short spoken line. */
-  notify(text) {
+  /**
+   * A verified observation from the watcher; the coach turns it into one short spoken line.
+   * Non-urgent notes wait until the coach finishes its sentence (only the latest is kept);
+   * urgent ones (mistakes) interrupt immediately.
+   */
+  notify(text, { urgent = false } = {}) {
+    if (this.speaking && !urgent) {
+      this.log('[live] inspector (queued until coach finishes):', text.slice(0, 80));
+      this.pendingNote = text;
+      return;
+    }
+    this.#sendNote(text);
+  }
+
+  #sendNote(text) {
     this.log('[live] inspector:', text);
     this.session?.sendRealtimeInput({ text: `[INSPECTOR] ${text}` });
   }
@@ -208,6 +231,10 @@ export class CoachSession {
   sendFrame(b64) {
     if (!this.session) return;
     this.latestFrame = b64;
+    // The client sends ~2 fps for the inspector; Gemini Live only takes ≤ 1 fps.
+    const now = Date.now();
+    if (now - this.lastFrameAt < 900) return;
+    this.lastFrameAt = now;
     this.session?.sendRealtimeInput({ video: { data: b64, mimeType: 'image/jpeg' } });
   }
 

@@ -50,7 +50,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
         timer = setTimeout(flush, BATCH_MS);
       } else if (e.kind === 'mistake') {
         verified = []; clearTimeout(timer); timer = null; // a warning beats stale "well done" news
-        coach.notify(`URGENT, say it now: ${e.say}`);
+        coach.notify(`URGENT, say it now: ${e.say}`, { urgent: true });
         hud('mistake', { warning: e.say });
       } else if (e.kind === 'cant_see') {
         coach.notify('The camera view is too dark or blurry to check this step. Ask them to move closer or add light.');
