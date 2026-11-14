@@ -76,7 +76,12 @@ We are **not** spreading thin: one product, one main challenge, only tech challe
 - Claim the code at https://mlh.link/junction-26.
 
 ## ✅ DECIDED (Sat 14.11): hands-free repair coach, demo = fixing a sink
-- The story is about workers and handymen (1 in 10 people work with their hands) plus the 9 in 10 who lack the know-how. The story is still being refined by our designer.
+- **Story: "your personal handyman".** We bring a tradesperson's expertise to ordinary people (the 9 in 10 without the know-how), not a tool for professionals. Our designer is refining it.
+- **Feedback from the Meta booth (Sat):**
+  - Don't build what Meta will ship natively. Meta Connect 2026 announced Muse on glasses, which "can act on what you're looking at": generic "what is this?" help is going to be native.
+  - **Our differentiator is expert know-how that Meta won't build.** That means expert-verified repair procedures, a coach that checks your work, safety stops, and handing off to a real professional, all running on the glasses' video and the Gemini Decisions API.
+  - **"Why would anyone trust it?"** Our credibility comes from real trades and HVAC expertise. Show it in the product: the steps come from experts and are not improvised, it says when it's unsure, it has safety gates, and it escalates to a professional.
+  - **Feedback must be fast enough to be usable.** Measure the loop latency and quote the number in the pitch.
 - Pipeline: **three Gemini models**:
   - **Gemini Live:** the voice
   - **Gemini Decision 1 / Decisions API:** the watcher, running continuous yes/no step checks

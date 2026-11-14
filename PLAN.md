@@ -39,7 +39,13 @@ Don't add anything else.
 
 ## 3. Use case: DECIDED (Sat 14.11)
 **A hands-free repair coach. The demo is fixing a sink (the P-trap under the basin).**
-- **Story (teammate owns it, still being refined):** about 1 in 10 people work with their hands. Pros meet an unfamiliar model on every job, and the other 9 in 10 don't have the know-how at all. The same engine serves both groups.
+- **Story: "your personal handyman"** (teammate owns it, still being refined). We bring a tradesperson's expertise to ordinary people. It's not aimed at professionals.
+- **Differentiator (from the Meta booth):** Meta will ship generic "look and ask" AI natively (Muse on glasses). It won't ship **expert-verified procedures, step checking, safety gates and handoff to a real pro**. That's our product.
+- **Trust:**
+  - Expert-authored repair plans: the model guides and checks but doesn't make up the steps.
+  - Confidence scores from the Decisions API: "I'm not sure, show me closer."
+  - Safety gates and escalation to a pro.
+- **Speed:** the feedback loop must feel instant. Measure it (step 0) and quote the number.
 - **Why glasses:** both hands are busy and wet under the sink. A phone can't be held or propped there.
 - **Why it's worth buying:** one fixed leak saves a €150+ call-out. Daily uses (cooking, assembly, bike) keep the glasses on your face.
 - **Pilot path:** our HVAC business. Customers try the fix themselves before a technician drives out. If it fails, the technician gets a handoff report.
