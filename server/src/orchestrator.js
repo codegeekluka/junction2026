@@ -25,10 +25,11 @@ export function connect({ coach, watcher, send, log, recorder }) {
     const step = runner && !runner.finished ? runner.step : null;
     const diagnosing = Boolean(diag && !diag.finished);
     const risky = diagnosing || Boolean(step && (step.gate || step.mistakes?.length));
-    // CAPTURE_MODE=careful → 2 fps on every step (more corrections, more data);
-    // default "smart" → 2 fps only on risky steps. See docs/DECISIONS.md (smart capture).
-    const careful = process.env.CAPTURE_MODE === 'careful';
-    const want = risky || (careful && step) ? 2 : 0.5;
+    // Default (since phone-app testing, Sat evening): 2 fps on EVERY step while a procedure
+    // runs; 0.5 fps when idle. CAPTURE_MODE=smart → 2 fps only on risky steps (saves data).
+    // See docs/DECISIONS.md D12/D20.
+    const smart = process.env.CAPTURE_MODE === 'smart';
+    const want = risky || (!smart && step) ? 2 : 0.5;
     if (want !== fps) {
       fps = want;
       send({ type: 'capture', fps, reason: diagnosing ? 'diagnosing' : risky ? `risky step: "${step.title}"` : step ? 'normal step' : 'no procedure running' });
@@ -73,7 +74,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
   // Steps can be verified faster than the coach can speak. So verified steps are batched
   // for a moment and the coach is always told the CURRENT step (not a queue of old ones).
   // Mistakes go out immediately.
-  const BATCH_MS = 1200;
+  const BATCH_MS = 500; // was 1200: felt slow in testing
   let verified = [];
   let timer = null;
 
@@ -108,6 +109,9 @@ export function connect({ coach, watcher, send, log, recorder }) {
       } else if (e.kind === 'cant_see') {
         coach.notify('The camera view is too dark or blurry to check this. Ask them to move closer or add light.');
         hud('cant_see');
+      } else if (e.kind === 'out_of_view') {
+        coach.notify(`The camera can't see ${e.what} any more. Ask the user, in one short sentence, to point the camera at ${e.what}.`);
+        hud('unsure', { warning: `Can\u2019t see ${e.what}. Point the camera at it.` });
       } else if (e.kind === 'stuck') {
         // ESCALATION: the inspector can't decide → the reasoning model takes a look.
         coach.notify(`The inspector can't tell whether step "${e.title}" is done (about ${Math.round(e.p * 100)}%). ` +

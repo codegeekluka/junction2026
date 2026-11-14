@@ -7,7 +7,7 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 | Criterion | Decisions to cite |
 |---|---|
 | Meta: Creativity & use case | D1, D2, D16 |
-| Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14 |
+| Meta: Technical execution (permissions, errors, performance trade-offs, connectivity, device state) | D4, D11, D12, D13, D14, D20 |
 | Meta: Real-world value & feasibility | D1, D16, D17 |
 | Meta: UX, accessibility & trust | D3, D6, D8, D9, D10, D15, D18, D19 |
 | Google: integration / innovative / essential | D5, D6, D7, D8, D12, D18 |
@@ -129,3 +129,16 @@ Criteria: **Meta** (25% each): Creativity & use case · Technical execution · R
 - **The P-trap draft now follows the designers' 6 steps** (still awaiting HVAC review), incl. a verbal safety question first ("drain cleaner today?") and a hard stop + "call a plumber" card when water still won't drain (blockage further down).
 - **Planned add-on (user's idea):** "which nut?" → Robotics-ER 2 locates the part → the server **crops the real camera image** around it and circles it → shown on the display. Faithful (a crop, not a generated image), uses ER for the job it's built for, and makes the first-person view the interface.
 - **Criterion:** Meta UX & accessibility, Creativity.
+
+### D20 · Inspector v2 after testing on the phone app: faster, harder to fool (Sat evening)
+- **What testers saw (bottle, Android app):** steps took ~2 s+ to register; it didn't notice when the bottle left the view; a step done *wrong* sometimes still passed.
+- **Causes:** 0.5 fps on normal steps + 2 checks needed (2–4 s) + a 1.2 s wait before speaking; no "is the object in view?" check; a state that was already true counted at once; a tilted bottle in hand could briefly read as "fallen"; mistake and done checks didn't block each other.
+- **Changes:**
+  - **2 fps on every step while a procedure runs** (reverses the D12 default; `CAPTURE_MODE=smart` brings the data-saving mode back), 0.5 s batching instead of 1.2 s.
+  - **3 confident checks in a row** to pass (still ~1.5 s at 2 fps); mistakes still warn after 2.
+  - **A step can't pass while any mistake signal is ≥ 50%.**
+  - **Action steps must be seen NOT done first** (or the done state must hold 5 s), so an already-true state doesn't skip the step; safety gates still pass at once.
+  - **inView check per procedure** ("is the bottle / sink in view?") → after ~2 s the coach says "I can't see the bottle, point the camera at it" + look card.
+- **Evidence (end-to-end, real Gemini):** pick-up verified 1.2 s after it happened; mistake caught 1.3 s after the wrong move; inspector 1.7 checks/s, median 0.29 s; an already-standing bottle no longer skipped step 1.
+- **Pitch line:** we tuned it on real use: fast enough to keep up, strict enough not to be fooled.
+- **Criterion:** Technical execution (performance trade-offs), Trust.

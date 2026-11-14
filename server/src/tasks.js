@@ -11,7 +11,9 @@
 //     done: { q, min } | { q, is, min }   must be seen in 2 checks in a row to advance
 //     mistakes: [{ id, q, is?, min, say, card? }] warnings the coach gives immediately
 //     card                   glasses display card id (design/glasses-ui), e.g. 'step-2-bucket'
-//     gate: true             safety step: can't be skipped
+//     gate: true             safety step: can't be skipped ("already true" counts at once)
+//     action: false          set for pure state checks; action steps must be seen NOT done first
+//   inView: { q, min, what } is the object in view at all? (else: "point the camera at it")
 //   }]
 //   quality: question id for "too dark/blurry" (pauses checking + asks for light)
 //
@@ -25,7 +27,12 @@ export const TASKS = {
     cards: { done: 'correct', look: 'look-down', mistake: 'careful' },
     match: 'testing, practice, demo with a bottle',
     quality: 'image_quality',
+    inView: { q: 'bottle_visible', min: 0.4, what: 'the bottle' },
     questions: {
+      bottle_visible: {
+        label: 'Bottle in view', type: 'noul',
+        instructions: 'Is there a bottle in the foreground, on or just above the table directly in front of the camera (in a hand counts)? Ignore anything far away in the background.',
+      },
       bottle_state: {
         label: 'Bottle state', type: 'choice',
         instructions: 'Looking only at the foreground, on the table or surface directly in front of the camera (ignore the background): what best describes the bottle?',
@@ -70,7 +77,12 @@ export const TASKS = {
     match: 'sink draining slowly, blocked or clogged sink, smelly sink, leaking drain pipe under the sink, P-trap',
     quality: 'image_quality',
     cards: { done: 'drain-clear', look: 'look-down', mistake: 'careful' },
+    inView: { q: 'sink_in_view', min: 0.4, what: 'the sink' },
     questions: {
+      sink_in_view: {
+        label: 'Sink area in view', type: 'noul',
+        instructions: 'Is a sink, its drain, the tap, or the drain pipes under a sink visible in the image?',
+      },
       stopper_out: {
         label: 'Stopper out', type: 'noul',
         instructions: 'Is the sink drain open, with the plug/stopper pulled out of the drain hole (or held in a hand)?',
