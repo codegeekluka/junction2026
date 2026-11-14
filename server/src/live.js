@@ -95,9 +95,12 @@ export class CoachSession {
           tools: [{ googleSearch: {} }, { functionDeclarations: TOOL_DECLARATIONS }],
           contextWindowCompression: { slidingWindow: {} }, // lifts the 2-min audio+video cap
           sessionResumption: { handle: this.handle },       // survive drops / 10-min connection limit
-          // Default is HIGH sensitivity: in a loud hall, background noise counted as the user
-          // speaking and cut the coach off mid-sentence.
-          realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW } },
+          // Speech-start sensitivity. Default HIGH (Gemini's default): with the phone mic in a
+          // pocket, LOW missed the user entirely. LIVE_VAD=low for a loud hall (the venue), where
+          // background noise otherwise cuts the coach off mid-sentence.
+          ...(process.env.LIVE_VAD === 'low'
+            ? { realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW } } }
+            : {}),
           // Fast replies, and no reasoning text in the output (the transcript once contained the
           // model's internal reasoning about tool calls).
           thinkingConfig: { includeThoughts: false }, // (thinkingLevel is not supported on gemini-3.8-live)
