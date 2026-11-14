@@ -116,7 +116,7 @@ calls tools               every 1–2 s, ~200 ms,       point/box + whether the 
 | 4 | Tools in Live: `check_step`, `safety_gate`, `locate` | Luka | ⬜ |
 | 5 | Watcher walks the tree + low-confidence → Live ✅ *"stop, flip the washer"* | Luka | ⬜ |
 | 6 | Keyframe memory + `recall` + `handoff_report` | | ⬜ |
-| 7 | Android DAT app → same backend (mock device first) ✅ *on glasses* | teammate | ⬜ protocol: `docs/protocol.md` (TBD) |
+| 7 | Android DAT app → same backend (mock device first) ✅ *on glasses* | teammate | ⬜ protocol ready: `docs/protocol.md`. Build on Mock Device Kit (phone camera as feed) |
 | 8 | Robustness: disconnect fallback, network resume, dark/blurry, consent | | ⬜ partly done in web client |
 | 9 | Demo set: real sink/trap, 60-second flow, film | design | ⬜ |
 | — | **Feature freeze 22:00**. Run `/challenge-check` at each ✅ milestone | | |
