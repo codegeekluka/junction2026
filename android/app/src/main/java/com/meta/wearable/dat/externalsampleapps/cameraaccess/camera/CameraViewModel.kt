@@ -30,8 +30,6 @@ import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.camera.Camera
 import com.meta.wearable.dat.camera.Stream
 import com.meta.wearable.dat.camera.addCamera
-import com.meta.wearable.dat.camera.types.AudioCodec
-import com.meta.wearable.dat.camera.types.AudioSampleRate
 import com.meta.wearable.dat.camera.types.PhotoData
 import com.meta.wearable.dat.camera.types.StreamConfiguration
 import com.meta.wearable.dat.camera.types.StreamState
@@ -47,7 +45,6 @@ import com.meta.wearable.dat.externalsampleapps.cameraaccess.R
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.CardImages
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.FrameGrabber
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.GlassesDisplay
-import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.MockPreview
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.ServerConnection
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.handyman.VoiceLink
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.stream.AudioInputHandler
@@ -146,7 +143,6 @@ class CameraViewModel(
   private var sessionStateJob: Job? = null
   private var sessionErrorJob: Job? = null
   private var videoJob: Job? = null
-  private var audioJob: Job? = null
   private var streamStateJob: Job? = null
   private var streamErrorJob: Job? = null
 
@@ -312,59 +308,47 @@ class CameraViewModel(
     _uiState.update { it.copy(isStartingStream = true) }
     viewModelScope.launch {
       try {
-        // Handyman: real glasses also need the DAT microphone permission for in-stream audio (the
-        // coach's ears without "call mode"). Both are requested through one Meta AI app redirect.
-        when {
-          !isGranted(Permission.CAMERA) ->
-              _uiState.update { it.copy(showCameraPermissionRedirectConfirm = true) }
-          useInStreamAudio() && !isGranted(Permission.MICROPHONE) ->
-              _uiState.update { it.copy(showCameraPermissionRedirectConfirm = true) }
-          else -> beginStream(withAudio = useInStreamAudio())
-        }
+        Wearables.checkPermissionStatus(Permission.CAMERA)
+            .onSuccess { status ->
+              if (status == PermissionStatus.Granted) {
+                beginStream()
+              } else {
+                _uiState.update { it.copy(showCameraPermissionRedirectConfirm = true) }
+              }
+            }
+            .onFailure { error, _ ->
+              Log.e(TAG, "Failed to check camera permission: ${error.description}")
+              wearablesViewModel.setRecentError(error.getLocalizedDescription(getApplication()))
+            }
       } finally {
         _uiState.update { it.copy(isStartingStream = false) }
       }
     }
   }
 
-  /** Confirmed from the permission prompt: requests camera (+ glasses mic) access, then streams. */
+  /** Confirmed from the permission prompt: requests camera access, then starts the stream. */
   fun confirmCameraPermissionRedirect(
       requestPermission: suspend (Permission) -> PermissionStatus,
   ) {
     _uiState.update { it.copy(showCameraPermissionRedirectConfirm = false) }
     if (!_uiState.value.isSessionActive || stream != null) return
     viewModelScope.launch {
-      if (!isGranted(Permission.CAMERA) && requestPermission(Permission.CAMERA) != PermissionStatus.Granted) {
+      val status = requestPermission(Permission.CAMERA)
+      if (status == PermissionStatus.Granted) {
+        beginStream()
+      } else {
         wearablesViewModel.setRecentError(
             getApplication<Application>().getString(R.string.error_camera_permission_denied),
         )
-        return@launch
       }
-      // Mic denied is not fatal: the coach falls back to the phone's mic.
-      val withAudio =
-          useInStreamAudio() &&
-              (isGranted(Permission.MICROPHONE) ||
-                  requestPermission(Permission.MICROPHONE) == PermissionStatus.Granted)
-      beginStream(withAudio)
     }
-  }
-
-  /** Handyman: in-stream audio on real glasses only (Mock Device Kit doesn't emit reliable PCM). */
-  private fun useInStreamAudio(): Boolean = MockPreview.glasses.value == null
-
-  private suspend fun isGranted(permission: Permission): Boolean {
-    var granted = false
-    Wearables.checkPermissionStatus(permission)
-        .onSuccess { status -> granted = status == PermissionStatus.Granted }
-        .onFailure { error, _ -> Log.w(TAG, "Couldn't check $permission: ${error.description}") }
-    return granted
   }
 
   fun cancelCameraPermissionRedirect() {
     _uiState.update { it.copy(showCameraPermissionRedirectConfirm = false) }
   }
 
-  private fun beginStream(withAudio: Boolean = false) {
+  private fun beginStream() {
     val current = session ?: return
     if (stream != null) return
     // Foreground service keeps the stream/recording alive while backgrounded.
@@ -372,10 +356,6 @@ class CameraViewModel(
     current
         .addCamera(
             StreamConfiguration(
-                // Handyman: the glasses mic inside the stream (16 kHz mono PCM) for the coach.
-                audioCodec =
-                    if (withAudio) AudioCodec.PCM(sampleRate = AudioSampleRate.RATE_16000, numberOfChannels = 1)
-                    else null,
                 videoQuality = VideoQuality.MEDIUM,
                 frameRate = FRAME_RATE,
                 // Compressed HEVC so frames feed both the on-screen decoder and the passthrough
@@ -389,8 +369,6 @@ class CameraViewModel(
           stream = added
           // Subscribe before start() so no initial transitions are missed.
           setupStreamListeners(added)
-          voice.setGlassesMic(withAudio)
-          Log.i(TAG, "stream starting, glasses mic in stream: $withAudio")
           _uiState.update { it.copy(streamState = StreamState.STARTING) }
           added.start().onFailure { error, _ ->
             Log.e(TAG, "Failed to start stream: ${error.description}")
@@ -419,11 +397,6 @@ class CameraViewModel(
     videoJob =
         viewModelScope.launch(frameDispatcher) {
           stream.videoStream.collect { handleVideoFrame(it) }
-        }
-    // Handyman: glasses mic audio carried in the stream (only when audioCodec was set).
-    audioJob =
-        viewModelScope.launch(Dispatchers.Default) {
-          stream.audioStream.collect { frame -> voice.onGlassesAudio(frame.buffer) }
         }
     streamStateJob = viewModelScope.launch {
       // state replays its current value (STOPPED) on subscribe, and we subscribe before start().
@@ -529,9 +502,6 @@ class CameraViewModel(
   private fun clearStreamResources() {
     videoJob?.cancel()
     videoJob = null
-    audioJob?.cancel()
-    audioJob = null
-    voice.setGlassesMic(false) // no stream → the coach falls back to the phone mic
     streamStateJob?.cancel()
     streamStateJob = null
     streamErrorJob?.cancel()
