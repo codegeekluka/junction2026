@@ -37,6 +37,29 @@ The web page (`web/app.js`) is a **working reference implementation** of everyth
 | `watch` | `state`: `on`·`off`, `set`, `questions`, `headline`, `quality` | The watcher started or stopped. `headline` = `{question, title, labels{option: plain words}}` tells you which answer to show big. |
 | `decision` | `answers`, `headline` `{choice, confidence, conflict?}`, `ms`, `serverMs`, or `error` (`timeout`·`failed`) | One watcher result, about once a second. Show `headline.labels[choice]` with its certainty: **≥0.75 "very sure" · ≥0.6 "fairly sure" · below that "not sure, show me another angle"**. An `error` just means that one check was skipped. |
 | `error` | `message` | Show or speak it in plain language (it's already written for users). |
+| **`hud`** | `state`, `task`, `step`, `title`, `say`, `gate`, `verified?`, `warning?` | **What the glasses display should show.** Sent whenever the procedure changes. See below. |
+
+### `hud`: what to show on the glasses display
+Sent when an expert procedure starts, a step is verified, a mistake is spotted, the camera can't see, or the job is done. The voice says the same thing, so the display is optional (audio-first).
+
+| field | example | meaning |
+|---|---|---|
+| `state` | `doing` · `mistake` · `cant_see` · `finished` · `stopped` | What's happening now. `stopped` → clear the display. |
+| `task` | `"Clear or re-seat a sink drain trap"` | Procedure name |
+| `step` | `"2/5"` | Current step number / total |
+| `title` | `"Bucket under the trap"` | Short step name (good for the display) |
+| `say` | `"Put a bucket or bowl right under the U-shaped pipe."` | The instruction (the coach speaks it too) |
+| `gate` | `true` | Safety step: can't be skipped, must be verified on camera |
+| `verified` | `"Find the trap"` | The step that was just confirmed on camera → show a ✓ briefly |
+| `warning` | `"Stop. There's no bucket under the pipe."` | Only with `state: "mistake"` → show prominently (red / ⚠) |
+
+Example: `{"type":"hud","state":"doing","task":"Clear or re-seat a sink drain trap","step":"2/5","title":"Bucket under the trap","say":"Put a bucket…","gate":true,"verified":"Find the trap"}`
+
+The web page renders this as the "step card" (`renderHud` in `web/app.js`), a working reference for the layout.
+**Display tips (Meta docs):** keep it minimal and high-contrast. Don't push display updates during a photo capture (they get batched until it finishes).
+
+### Starting a procedure without voice (testing)
+`→ {"type":"task","task":"bottle_demo"}` starts a procedure directly (same as the coach calling its `start_task` tool). Ids: `bottle_demo` (test anywhere with a bottle), `ptrap` (sink; draft until expert-reviewed).
 
 ## Getting the media from the glasses (Device Access Toolkit notes)
 - **Camera:** DAT stream frames (e.g. 504×896 or 720×1280; request a low rate, 2–7 fps is plenty) → take ~1 per second → scale to ~768 px wide → JPEG → base64 → `frame`. Photo capture is sharper but slower, so save it for on-demand "look closely" moments.
