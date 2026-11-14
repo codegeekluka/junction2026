@@ -54,6 +54,9 @@ Sent when an expert procedure starts, a step is verified, a mistake is spotted, 
 | `gate` | `true` | Safety step: can't be skipped, must be verified on camera |
 | `verified` | `"Find the trap"` | The step that was just confirmed on camera → show a ✓ briefly |
 | `warning` | `"Stop. There's no bucket under the pipe."` | Only with `state: "mistake"` → show prominently (red / ⚠) |
+| **`short`** | `"Both nuts left, by hand"` | **The instruction in ≤ 6 words: the main text on the glasses display.** |
+| **`tip`** | `"Washer: flat side to the nut"` | Optional detail for a tricky step (show smaller, e.g. amber). |
+| **`status`** | `"👁 Watching…"` · `"✓ Done"` · `"⚠ Stop"` · `"? Show me another angle"` · `"Can't see: more light"` | **One status line so the user knows it's working**: shown under the instruction. |
 | **`card`** | `"step-2-bucket"` | **Which designer card to show** (`design/glasses-ui`). Missing → fall back to the text fields. |
 | **`cardUrl`** | `"/cards/12-step-2-bucket.png"` | The card image on our server (1200×1200 PNG, transparent → scale to 600×600 on black). Full URL = server base + this path, e.g. `http://localhost:8080/cards/12-step-2-bucket.png`. |
 
@@ -63,6 +66,7 @@ Sent when an expert procedure starts, a step is verified, a mistake is spotted, 
 Example: `{"type":"hud","state":"doing","task":"Clear or re-seat a sink drain trap","step":"2/5","title":"Bucket under the trap","say":"Put a bucket…","gate":true,"verified":"Find the trap"}`
 
 The web page renders this as the "step card" (`renderHud` in `web/app.js`), a working reference for the layout.
+**Suggested glasses layout (600×600):** progress (`step`) at the top · the card image (or later the live cutout of the real part) in the middle · `short` in large text · `tip` small · `status` at the bottom. The voice says the long version (`say`).
 **Display tips (Meta docs):** keep it minimal and high-contrast. Don't push display updates during a photo capture (they get batched until it finishes).
 
 ### Starting a procedure without voice (testing)

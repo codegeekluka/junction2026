@@ -11,6 +11,8 @@
 //     done: { q, min } | { q, is, min }   must be seen in 2 checks in a row to advance
 //     mistakes: [{ id, q, is?, min, say, card? }] warnings the coach gives immediately
 //     card                   glasses display card id (design/glasses-ui), e.g. 'step-2-bucket'
+//     short                  the instruction in ≤ 6 words, for the glasses display ("Both nuts left, by hand")
+//     tip                    optional detail for a tricky step ("Washer: flat side to the nut")
 //     gate: true             safety step: can't be skipped ("already true" counts at once)
 //     action: false          set for pure state checks; action steps must be seen NOT done first
 //   inView: { q, min, what } is the object in view at all? (else: "point the camera at it")
@@ -53,18 +55,18 @@ export const TASKS = {
       },
     },
     steps: [
-      { id: 'place', title: 'Stand the bottle up', say: 'Put the bottle on the table in front of you, standing upright.',
+      { id: 'place', title: 'Stand the bottle up', short: 'Stand the bottle up', say: 'Put the bottle on the table in front of you, standing upright.',
         done: { q: 'bottle_state', is: 'standing', min: 0.75 } },
-      { id: 'cap', title: 'Check the cap', gate: true, say: 'Make sure the cap is on before we tip it. Safety first.',
+      { id: 'cap', title: 'Check the cap', short: 'Cap on tight?', tip: 'Twist it to the right to close', gate: true, say: 'Make sure the cap is on before we tip it. Safety first.',
         done: { q: 'cap_on', min: 0.75 } },
-      { id: 'tip', title: 'Lay it on its side', say: 'Now gently lay the bottle down on its side.',
+      { id: 'tip', title: 'Lay it on its side', short: 'Tip it on its side', tip: 'Keep it on the table, don\u2019t lift', say: 'Now gently lay the bottle down on its side.',
         done: { q: 'bottle_state', is: 'fallen', min: 0.75 },
         mistakes: [
           // Prevents the harm before it happens: cap off while about to tip = spill.
           { id: 'cap_off_before_tip', q: 'cap_on', is: false, min: 0.8, say: 'Stop! The cap is off. Put it back on before you tip it, or it will spill.' },
           { id: 'lifted', q: 'bottle_state', is: 'held', min: 0.8, say: 'Don’t lift it, just tip it over on the table.' },
         ] },
-      { id: 'pickup', title: 'Pick it up', say: 'Great. Now pick the bottle up off the table.',
+      { id: 'pickup', title: 'Pick it up', short: 'Pick it up', say: 'Great. Now pick the bottle up off the table.',
         done: { q: 'bottle_state', is: 'held', min: 0.75 },
         mistakes: [{ id: 'cap_off_pickup', q: 'cap_on', is: false, min: 0.8, say: 'Careful, the cap came off. Put it back on before you pick it up.' }] },
     ],
@@ -125,24 +127,24 @@ export const TASKS = {
       },
     },
     steps: [
-      { id: 'stopper', card: 'step-1-stopper', title: 'Pull the stopper',
+      { id: 'stopper', card: 'step-1-stopper', title: 'Pull the stopper', short: 'Pull the stopper out', tip: 'Used drain cleaner today? Stop.',
         say: 'First: have you poured any drain cleaner in today? If you have, don’t open the pipe, it can burn. If not, pull the stopper straight up and out of the drain.',
         done: { q: 'stopper_out', min: 0.75 } },
-      { id: 'bucket', card: 'step-2-bucket', title: 'Bucket under the pipe', gate: true,
+      { id: 'bucket', card: 'step-2-bucket', title: 'Bucket under the pipe', short: 'Bucket under the U-pipe', tip: 'There\u2019s water in the pipe', gate: true,
         say: 'Put a bucket right under the U-shaped pipe. There’s water in it.',
         done: { q: 'bucket_under_trap', min: 0.75 } },
-      { id: 'unscrew', card: 'step-3-unscrew', title: 'Unscrew by hand',
+      { id: 'unscrew', card: 'step-3-unscrew', title: 'Unscrew by hand', short: 'Both nuts left, by hand', tip: 'Lower the pipe into the bucket',
         say: 'Turn both big nuts to the left, by hand, and lower the U-pipe into the bucket.',
         done: { q: 'trap_removed', min: 0.75 },
         mistakes: [{ id: 'no_bucket', card: 'careful', q: 'bucket_under_trap', is: false, min: 0.8,
           say: 'Stop. There’s no bucket under the pipe. Put it back before you loosen anything, the water will spill.' }] },
-      { id: 'rinse', card: 'step-4-rinse', title: 'Empty and rinse',
+      { id: 'rinse', card: 'step-4-rinse', title: 'Empty and rinse', short: 'Empty and rinse the pipe', tip: 'Keep the washers in the nuts',
         say: 'Empty the pipe into the bucket and rinse it out. Check the washers are still in the nuts.',
         done: { q: 'trap_rinsing', min: 0.75 } },
-      { id: 'refit', card: 'step-5-refit', title: 'Screw back on',
+      { id: 'refit', card: 'step-5-refit', title: 'Screw back on', short: 'Screw back on, hand-tight', tip: 'Washer: flat side to the nut',
         say: 'Screw the pipe back on, hand-tight. Flat side of each washer towards the nut.',
         done: { q: 'trap_attached', min: 0.75 } },
-      { id: 'water', card: 'step-6-water', title: 'Run the water',
+      { id: 'water', card: 'step-6-water', title: 'Run the water', short: 'Run the tap', tip: 'I\u2019m watching the joints for drips',
         say: 'Run the tap for a few seconds while I watch the pipe for drips.',
         done: { q: 'water_draining', min: 0.75 },
         mistakes: [

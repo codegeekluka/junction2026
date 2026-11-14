@@ -52,14 +52,27 @@ export function connect({ coach, watcher, send, log, recorder }) {
     return null;
   };
 
+  // One short status line for the display: is it working, done, or is something wrong?
+  const hudStatus = (state, extra) => {
+    if (state === 'doing') return extra.card === 'correct' ? '\u2713 Done' : '\ud83d\udc41 Watching\u2026';
+    if (state === 'finished') return '\u2713 All done';
+    if (state === 'mistake') return `\u26a0 ${extra.warning ? 'Stop' : 'Careful'}`;
+    if (state === 'cant_see') return 'Can\u2019t see: more light';
+    if (state === 'unsure') return '? Show me another angle';
+    return null;
+  };
+
   const hud = (state, extra = {}) => {
     capturePolicy();
     hudSeq++;
     const s = runner?.status();
     const { card, ...rest } = extra;
+    const st = runner && !runner.finished ? runner.step : null;
     send({ type: 'hud', state, task: s?.title ?? null,
       step: s?.step ? `${s.step.n}/${s.step.of}` : null, title: s?.step?.title ?? null,
-      say: s?.step?.say ?? null, gate: s?.step?.gate ?? false, ...rest,
+      say: s?.step?.say ?? null, gate: s?.step?.gate ?? false,
+      short: st?.short ?? s?.step?.title ?? null, tip: st?.tip ?? null,
+      status: hudStatus(state, extra), ...rest,
       ...cardFields(card ?? defaultCard(state)) });
   };
 
@@ -158,7 +171,9 @@ export function connect({ coach, watcher, send, log, recorder }) {
   const diagHud = (state, title, say, card) => {
     capturePolicy();
     hudSeq++;
+    const status = { diagnosing: '\ud83d\udc41 Looking\u2026', diagnosed: 'Found it', unsure: '? Not sure yet', mistake: '\u26a0 Stop' }[state] ?? null;
     send({ type: 'hud', state, task: 'Diagnosis', step: null, title, say, gate: false,
+      short: title, tip: say, status,
       ...(state === 'mistake' ? { warning: say } : {}), ...cardFields(card) });
   };
 
