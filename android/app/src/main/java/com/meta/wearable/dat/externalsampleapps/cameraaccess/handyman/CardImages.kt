@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap
 class CardImages(context: Context) {
   companion object {
     private const val TAG = "Handyman:Cards"
-    private const val DISPLAY_SIZE = 600 // the Ray-Ban Display is 600×600
+    // 300 px, not the display's full 600: the card is one element of the step screen, and a
+    // quarter of the pixels goes over Bluetooth ~4× faster (the display was lagging behind).
+    private const val DISPLAY_SIZE = 300
   }
 
   private val assets = context.applicationContext.assets
