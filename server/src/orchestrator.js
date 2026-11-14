@@ -142,7 +142,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
           diagHud('diagnosed', `Looks like ${e.label}`, `Expert procedure available: ${t.title}`, 'confirm');
         } else if (e.nothingWrong) {
           coach.notify(`Diagnosis: ${e.label} (${p}% sure). Tell the user nothing looks wrong from here, and ask what they noticed (sound, smell, drip, when it happens).`);
-          diagHud('diagnosed', 'Nothing visibly wrong', 'Tell me what you noticed', 'thinking');
+          diagHud('diagnosed', 'Nothing visibly wrong', 'Tell me what you noticed', 'listening');
         } else if (e.showMe) {
           coach.notify(`The inspector can't see the problem area: ${e.label}. Ask the user: ${e.showMe} Then call diagnose again.`);
           diagHud('unsure', 'Show me the problem', e.showMe, 'look-down');
@@ -150,7 +150,7 @@ export function connect({ coach, watcher, send, log, recorder }) {
           // ESCALATION: known problem, but no expert procedure yet → Live's own knowledge, flagged.
           coach.notify(`Diagnosis: ${e.label} (${p}% sure). There is NO expert-verified procedure for this yet. ` +
             'Help with your own knowledge if it is a simple, safe fix, say clearly that this advice is not expert-verified, and suggest a professional otherwise.');
-          diagHud('diagnosed', `Looks like ${e.label}`, 'No expert procedure yet: general advice only', 'thinking');
+          diagHud('diagnosed', `Looks like ${e.label}`, 'No expert procedure yet: general advice only', 'listening');
         }
       } else if (e.kind === 'escalate') {
         // ESCALATION: the fast inspector isn't sure → hand over to the reasoning model.
