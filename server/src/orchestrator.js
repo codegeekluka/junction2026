@@ -241,7 +241,13 @@ export function connect({ coach, watcher, send, log, recorder }) {
 
   // Let the client start a procedure directly too (testing without voice).
   return {
-    startTask(id) { return coach.onTool('start_task', { task_id: id }); },
+    // Started from the app/web (button), not by the coach: tell the coach so it introduces step 1.
+    async startTask(id) {
+      const r = await coach.onTool('start_task', { task_id: id });
+      if (r?.ok) coach.notify(`The user started the expert procedure "${r.procedure}" from the app (${r.steps} steps). ` +
+        `Briefly say you'll guide them and check each step on camera, then give step 1: ${r.tell_user}`);
+      return r;
+    },
     diagnose(area) { return coach.onTool('diagnose', { area }); },
   };
 }
