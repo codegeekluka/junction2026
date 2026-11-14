@@ -147,6 +147,19 @@ fun HandymanPanel(
         OutlinedButton(onClick = onStartBottle) { Text("Bottle", color = Color.White) }
         OutlinedButton(onClick = onStartSink) { Text("Sink", color = Color.White) }
       } else {
+        // Coach on but no procedure yet: start the right one directly (the coach is told and
+        // introduces step 1), instead of relying on the coach to pick it by voice.
+        val procedureRunning =
+            state.activeTask != null ||
+                (state.hud != null && state.hud.state !in setOf("stopped", "diagnosing", "diagnosed", "unsure"))
+        if (state.coach != CoachState.OFF && !procedureRunning) {
+          Button(
+              onClick = onStartSink,
+              colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+          ) {
+            Text("Start sink procedure")
+          }
+        }
         OutlinedButton(onClick = onStop) { Text("Stop", color = Color.White) }
       }
     }
