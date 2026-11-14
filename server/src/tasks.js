@@ -50,9 +50,14 @@ export const TASKS = {
         done: { q: 'cap_on', min: 0.75 } },
       { id: 'tip', title: 'Lay it on its side', say: 'Now gently lay the bottle down on its side.',
         done: { q: 'bottle_state', is: 'fallen', min: 0.75 },
-        mistakes: [{ id: 'lifted', q: 'bottle_state', is: 'held', min: 0.8, say: 'Don’t lift it, just tip it over on the table.' }] },
+        mistakes: [
+          // Prevents the harm before it happens: cap off while about to tip = spill.
+          { id: 'cap_off_before_tip', q: 'cap_on', is: false, min: 0.8, say: 'Stop! The cap is off. Put it back on before you tip it, or it will spill.' },
+          { id: 'lifted', q: 'bottle_state', is: 'held', min: 0.8, say: 'Don’t lift it, just tip it over on the table.' },
+        ] },
       { id: 'pickup', title: 'Pick it up', say: 'Great. Now pick the bottle up off the table.',
-        done: { q: 'bottle_state', is: 'held', min: 0.75 } },
+        done: { q: 'bottle_state', is: 'held', min: 0.75 },
+        mistakes: [{ id: 'cap_off_pickup', q: 'cap_on', is: false, min: 0.8, say: 'Careful, the cap came off. Put it back on before you pick it up.' }] },
     ],
   },
 
