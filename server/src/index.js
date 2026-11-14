@@ -16,6 +16,7 @@ import { Watcher } from './watcher.js';
 import { Recorder } from './recorder.js';
 import { connect } from './orchestrator.js';
 import { CARDS_DIR } from './cards.js';
+import { AudioRecorder } from './audio-recorder.js';
 
 if (!process.env.GEMINI_API_KEY) {
   console.error('GEMINI_API_KEY missing. Put it in the repo-root .env (see .env.example).');
@@ -37,9 +38,17 @@ function attachLive(server) {
     const id = Math.random().toString(36).slice(2, 7);
     const log = (...a) => console.log(`[${id}]`, ...a);
     log('client connected from', req.socket.remoteAddress);
-    const send = (msg) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)); };
-    const coach = new CoachSession(send, log);
     const recorder = new Recorder(id);
+    // RECORD_AUDIO=1: save both voices + subtitles for the demo video (see audio-recorder.js)
+    const audio = new AudioRecorder(recorder.dir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../logs/audio_${id}`));
+    const send = (msg) => {
+      if (msg.type === 'audio') audio.speech(msg.data);
+      else if (msg.type === 'interrupted') audio.interrupted();
+      else if (msg.type === 'transcript') audio.transcript(msg.who, msg.text);
+      else if (msg.type === 'turnComplete') audio.turnEnd();
+      if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
+    };
+    const coach = new CoachSession(send, log);
     const watcher = new Watcher(send, log, recorder);
     const orch = connect({ coach, watcher, send, log, recorder });
 
@@ -50,7 +59,7 @@ function attachLive(server) {
       try { msg = JSON.parse(raw); } catch { return; }
       switch (msg.type) {
         case 'start': coach.start(msg.handle).catch(() => {}); break;
-        case 'audio': usage.audioBytes += msg.data.length * 0.75; coach.sendAudio(msg.data); break;
+        case 'audio': usage.audioBytes += msg.data.length * 0.75; audio.mic(msg.data); coach.sendAudio(msg.data); break;
         case 'frame':
           usage.frames++; usage.frameBytes += msg.data.length * 0.75;
           coach.sendFrame(msg.data); watcher.setFrame(msg.data); break;
@@ -77,6 +86,8 @@ function attachLive(server) {
       log('usage', JSON.stringify(stats));
       if (usage.frames) recorder.stats(stats);
       coach.close(); watcher.close();
+      const saved = audio.finish();
+      if (saved) log('audio + transcript saved to', saved);
     });
   });
 }
