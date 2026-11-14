@@ -159,7 +159,7 @@ fun CameraScreen(
           isStreaming = ui.isStreaming,
           onStartCoach = { cameraViewModel.startCoach(onRequestRecordAudioPermission) },
           onStartBottle = { cameraViewModel.server.startTask("bottle_demo") },
-          onStartSink = { cameraViewModel.server.startTask("ptrap") },
+          onStartSink = { cameraViewModel.server.startTask("bottle_trap") }, // our demo sink has a bottle trap (Finnish basin)
           onStop = { cameraViewModel.stopHandyman() },
       )
 
