@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Handyman: a repair coach on Meta glasses. Step through one real repair and see what the wearer experiences next to what the system is doing.">
 <title>Handyman Walkthrough</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -221,6 +226,37 @@ code.call { font: 500 13px ui-monospace, "SF Mono", Consolas, monospace; color: 
 
 footer { font-size: 13.5px; color: var(--muted); display: grid; gap: 4px; max-width: 90ch; }
 
+/* ---------- phones ---------- */
+.flow-m, .arch-m { display: none; }
+.arch-m .n { background: var(--surface); border: 1px solid var(--hair-2); border-radius: 14px; padding: 12px 14px; }
+.arch-m .n b { display: block; font: 600 15px var(--display); letter-spacing: -0.01em; }
+.arch-m .n span { font-size: 12.5px; color: var(--muted); }
+.arch-m .n.live { border-color: rgba(10,100,232,0.45); } .arch-m .n.insp { border-color: rgba(18,137,90,0.45); }
+.arch-m .v { height: 26px; width: 2px; margin: 0 auto; background: #d1d1d6 linear-gradient(var(--ink), var(--ink)) no-repeat 0 -8px / 2px 8px; animation: drip 1.6s linear infinite; }
+.arch-m .split { height: 18px; margin: 0 25%; border: 2px solid #d1d1d6; border-bottom: 0; border-radius: 12px 12px 0 0; }
+.arch-m .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+@keyframes drip { to { background-position: 0 30px; } }
+.flow-m { list-style: none; margin: 0; padding: 0; }
+.flow-m li { position: relative; background: var(--insp-soft); border: 1px solid rgba(18,137,90,0.35); border-radius: 12px; padding: 9px 14px; display: grid; }
+.flow-m li + li { margin-top: 16px; }
+.flow-m li + li::before { content: ""; position: absolute; left: 22px; top: -17px; height: 16px; width: 2px; background: rgba(18,137,90,0.45); }
+.flow-m small { font-size: 11.5px; color: var(--muted); } .flow-m b { font: 600 14.5px var(--display); }
+@media (max-width: 700px) {
+  .arch { display: none; } .arch-m { display: grid; }
+  .flow svg { display: none; } .flow-m { display: block; }
+}
+@media (max-width: 600px) {
+  .view { container-type: inline-size; }
+  .toast { left: 50%; top: 37.5cqw; }
+  .controls { position: sticky; bottom: 0; z-index: 5; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 10px max(16px, env(safe-area-inset-left, 0px)) calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(245,245,247,0.82); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--hair); }
+  .btns { width: 100%; flex-wrap: nowrap; gap: 8px; }
+  .btn { padding: 10px 14px; min-height: 44px; font-size: 14.5px; }
+  #next { flex: 1; justify-content: center; }
+  .hint { display: none; }
+  body { padding-bottom: 0; }
+}
+@media (hover: none) { .hint kbd { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -425,7 +461,9 @@ function flow(nodes) {
     if (n) s += `<path class="w" d="M${x - gap} ${y}H${x}"/><path class="p" style="animation-delay:${n * 0.3}s" d="M${x - gap} ${y}H${x}"/>`;
     s += `<rect class="n" x="${x + 0.5}" y="2.5" width="${w - 1}" height="${h - 1}" rx="12"/><text class="k" x="${x + 14}" y="23">${esc(k)}</text><text class="v" x="${x + 14}" y="43">${esc(v)}</text>`;
   });
-  return s + "</svg>";
+  s += "</svg>";
+  const m = `<ol class="flow-m" aria-hidden="true">${nodes.map(([k, v]) => `<li><small>${esc(k)}</small><b>${esc(v)}</b></li>`).join("")}</ol>`;
+  return s + m;
 }
 
 function stageHTML(s) {
@@ -514,6 +552,13 @@ function summaryHTML() {
         ${box(772, 20, 220, 76, "Gemini Live", "The voice", "rgba(10,100,232,.45)")}
         ${box(772, 140, 220, 76, "Decisions API", "The inspector", "rgba(18,137,90,.45)")}
       </svg></div>
+      <div class="arch-m" role="img" aria-label="Meta glasses connect to the Android app, which connects to our server, which uses Gemini Live and the Gemini Decisions API">
+        <div class="n"><b>Meta glasses</b><span>Camera, display, audio</span></div><i class="v"></i>
+        <div class="n"><b>Android app</b><span>Meta Device Access Toolkit</span></div><i class="v"></i>
+        <div class="n"><b>Our server</b><span>Procedures and step checks</span></div><i class="v"></i>
+        <div class="split"></div>
+        <div class="pair"><div class="n live"><b>Gemini Live</b><span>The voice</span></div><div class="n insp"><b>Decisions API</b><span>The inspector</span></div></div>
+      </div>
       <dl class="spec">
         <div><dt>Time per camera check</dt><dd>0.3 s</dd></div>
         <div><dt>From doing a step to verified</dt><dd>about 1.2 s</dd></div>
