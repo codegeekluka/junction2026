@@ -1,6 +1,7 @@
 # Junction 2026 — Team Context
 
 > Shared context for our team. Everyone (and every teammate's Claude / AI assistant) should read this first.
+> **Starting a new session? Read `docs/HANDOFF-server.md` (the brain/server) or `docs/HANDOFF-android.md` (the glasses app) next.** Decisions + reasoning: `docs/DECISIONS.md`.
 > Claude Code loads this file automatically when it's opened in this folder.
 > **Game plan, roles and timeline: `PLAN.md`.** Meta glasses dev setup (DAT vs Web Apps, links, hardware troubleshooting): `META-DEV.md`. Full briefs (Meta, Gemini, ElevenLabs, Aiven), participant guide and SDK setup notes: `challenge-briefs.md`. Full list of all challenges and scores: `challenges-report.md`. Team profile: `TEAM.md`. Verbatim source material (Meta brief, full participant guide, all tech challenges, hardware desk rules, glasses gotchas, reset and pairing steps): `research/` (start with `research/README.md`).
 
