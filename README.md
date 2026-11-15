@@ -4,6 +4,9 @@
 Handyman sees what you see through Meta glasses, talks you through a repair, **checks every step on camera**, warns you *before* you make a mistake, and tells you when to call a professional.
 Demo job: unclogging a sink with a bottle trap. Built at Junction 2026 for **Meta: AI Glasses for Everyone, Everyday** and **Google DeepMind: Best Use of Gemini API**.
 
+Demo video: https://drive.google.com/file/d/1jQkJufb9kozY8ZXtUTv-csyjXpx_cwe2/view?usp=drive_link
+Demo site: https://codegeekluka.github.io/junction2026/demo/
+
 ## How it works
 
 ```
