@@ -21,7 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
-Third-party code: files under android/ that carry a "Copyright (c) Meta Platforms, Inc."
-header are from Meta's Wearables Device Access Toolkit CameraAccess sample and are
-licensed under the Meta Wearables Developer Terms
-(https://wearables.developer.meta.com/terms), not under this MIT license.
+Third-party material in this repository is NOT covered by the MIT license above:
+
+- android/: files that carry a "Copyright (c) Meta Platforms, Inc." header come from
+  Meta's Wearables Device Access Toolkit CameraAccess sample (meta/meta-wearables-dat-android)
+  and stay under the Meta Wearables Developer Terms (https://wearables.developer.meta.com/terms).
+  Their terms are copied in android/LICENSE.
+- .claude/skills/gemini-api-dev/ and .claude/skills/gemini-live-api-dev/: copied from
+  google-gemini/gemini-skills, licensed under the Apache License 2.0.
+- research/: verbatim copies of event and vendor documents (Junction participant guide,
+  challenge briefs, Meta developer docs), kept for reference. Copyright stays with their authors.

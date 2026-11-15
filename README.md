@@ -43,4 +43,4 @@ Measured: ~0.3 s per check · step confirmed ~1.2–1.5 s after it happens · 89
 Procedures are AI-drafted from cited sources and still need expert review · the user's voice uses the phone mic (the glasses' mic forces Bluetooth call mode, which hides the display) · glasses events (taken off, battery) aren't handled yet.
 
 ## License
-Our code is MIT (see `LICENSE`). Files under `android/` that carry Meta's copyright header come from Meta's CameraAccess sample and remain under the [Meta Wearables Developer Terms](https://wearables.developer.meta.com/terms).
+Our code is MIT (see `LICENSE`). Files under `android/` that carry Meta's copyright header come from Meta's CameraAccess sample and remain under the [Meta Wearables Developer Terms](https://wearables.developer.meta.com/terms). The Gemini skills in `.claude/skills/` are Google's (Apache 2.0), and `research/` holds verbatim copies of event and vendor documents for reference; neither is ours to license. Details in `LICENSE`.
