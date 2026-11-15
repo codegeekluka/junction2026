@@ -283,7 +283,7 @@ footer { font-size: 13.5px; color: var(--muted); display: grid; gap: 4px; max-wi
 // frame: a still from our glasses footage in frames/ (falls back to a scene card when missing).
 // checks: [question, confidence, state]  state: pass (≥ 75% threshold) · fail (mistake firing) · warn (unsure) · idle
 const S = [
-  { tab: "Start", where: "Session starts", frame: "sink", scene: "A bathroom basin full of standing water. The wearer has just pressed Start.",
+  { tab: "Start", where: "Session starts", frame: "sink", scene: "The tap is running and the basin is filling up instead of draining. The wearer has just pressed Start.",
     card: "02-listening", short: "Listening", status: ["insp", "mic", "Camera and mic on"],
     talk: [["you", "Hey, my sink is draining really slowly. Can you take a look?"]],
     live: ["c-live", "listening", "Hears the request and calls <code class=\"call\">diagnose(\"sink\")</code> instead of guessing."],
@@ -301,7 +301,7 @@ const S = [
     checks: [["Standing water in the basin?", 0.93, "pass"], ["Water leaking under the sink?", 0.08, "idle"], ["Hazard: spraying water or wet electrics?", 0.03, "idle"]],
     log: [["insp", "Diagnosed a slow drain and a bottle trap in about 1.3 s"], ["live", "Called start_task(\"bottle_trap\")"]], cam: "2 frames a second while diagnosing",
     why: "Advice from the Google DeepMind team: one problem at a time, as a decision tree. The problem, the trap type, a confirming check and the hazards all go in one Decisions API call, which costs about the same as one question. The trap type picks the procedure; Finnish bathroom basins usually have bottle traps.",
-    facts: [["Questions per call", "up to 16"], ["Per check", "about 0.3 s"]] },
+    facts: [["Questions per call", "up to 17"], ["Per check", "about 0.3 s"]] },
 
   { tab: "Step 1", where: "Step 1 of 7", frame: "stopper", scene: "The wearer lifts the pop-up stopper out of the drain. Hair is wrapped around it.",
     card: "11-step-1-stopper", step: "1/7", short: "Pull the stopper out", tip: "Used drain cleaner today? Stop.", status: ["insp", "check", "Done"],
@@ -514,9 +514,9 @@ function summaryHTML() {
       </svg></div>
       <dl class="spec">
         <div><dt>Time per camera check</dt><dd>0.3 s</dd></div>
-        <div><dt>From doing a step to verified</dt><dd>about 1.5 s</dd></div>
-        <div><dt>Questions in one call</dt><dd>16</dd></div>
-        <div><dt>Accuracy after tuning, 19 labelled frames</dt><dd>89% → 100%</dd></div>
+        <div><dt>From doing a step to verified</dt><dd>about 1.2 s</dd></div>
+        <div><dt>Questions in one call</dt><dd>17</dd></div>
+        <div><dt>Accuracy after tuning, 19 labelled frames</dt><dd>79% → 100%</dd></div>
         <div><dt>Frames a minute to the expensive model</dt><dd>60 → 6</dd></div>
         <div><dt>Sources behind the steps</dt><dd>21</dd></div>
         <div><dt>Cost of camera checks</dt><dd>€0.40 an hour</dd></div>
