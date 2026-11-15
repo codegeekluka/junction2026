@@ -1,640 +1,569 @@
 <title>Handyman Walkthrough</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: a product console. Top bar (brand + colour code), a scrubber of the 13 moments,
-   then one app frame: the wearer's view (camera feed with the glasses display floating in it, transcript)
-   beside the system console (Gemini Live, Decisions API, event log, design decision).
-   Single dark look on purpose: it mirrors the see-through glasses display and the demo video. */
+/* Layout: an Apple-style product walkthrough (the team's references): a large headline, a segmented
+   chapter control with a tick ruler, then one white stage card split into "what you see" (the real
+   glasses view with the display over it, the conversation) and "what happens inside" (Gemini Live,
+   the Decisions API, the server's log), with a soft blue/green glow behind it. Light, on purpose. */
 :root {
-  --bg: #06070a;
-  --bg2: #0b0d12;
-  --panel: #10131a;
-  --panel2: #151922;
-  --line: #222632;
-  --line2: #2c3140;
-  --fg: #eef0f4;
-  --fg2: #c3c7d1;
-  --muted: #7d8291;
-  --live: #4d84ff;
-  --insp: #34d399;
-  --meta: #e5e7eb;
-  --danger: #ff5a5a;
-  --warn: #ffb020;
-  --cyan: #00d4ff;
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  --r: 16px;
-  --ease: cubic-bezier(.2,.9,.1,1);
-  color-scheme: dark;
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --ink: #1d1d1f;
+  --ink-2: #424245;
+  --muted: #6e6e73;
+  --hair: rgba(0, 0, 0, 0.08);
+  --hair-2: rgba(0, 0, 0, 0.12);
+  --fill: #f2f2f4;
+  --live: #0a64e8;          /* Gemini Live = the voice */
+  --live-soft: #e8f0fe;
+  --insp: #12895a;          /* Gemini Decisions API = the inspector */
+  --insp-soft: #e4f5ec;
+  --danger: #d92d2d;
+  --danger-soft: #fde8e8;
+  --warn: #b26a00;
+  --warn-soft: #fdf1dc;
+  --glass: #0b0c0f;         /* the glasses display: black = see-through */
+  --cyan: #00c2ea;
+  --display: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { background: var(--bg); }
-body { color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 36px;
-  background:
-    radial-gradient(900px 500px at 12% -10%, rgba(77,132,255,0.10), transparent 60%),
-    radial-gradient(800px 480px at 95% 0%, rgba(52,211,153,0.08), transparent 60%),
-    var(--bg); }
-.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 18px; }
+body { margin: 0; color: var(--ink); font: 400 16px/1.5 var(--text); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: clamp(28px, 5vw, 64px) 48px; }
+::selection { background: #cfe0ff; color: var(--ink); }
+:focus-visible { outline: 3px solid rgba(10, 100, 232, 0.45); outline-offset: 2px; border-radius: 10px; }
+* { scrollbar-width: thin; scrollbar-color: #c7c7cc transparent; }
 h1, h2, h3, p { margin: 0; }
 h1, h2 { text-wrap: balance; }
-.mono { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-button { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 8px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: clamp(24px, 3vw, 36px); }
+.ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/* entrance (once, on load) */
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-.enter { animation: rise 700ms var(--ease) both; }
-.enter.d1 { animation-delay: 80ms; } .enter.d2 { animation-delay: 160ms; } .enter.d3 { animation-delay: 240ms; }
+/* ---------- intro ---------- */
+.intro { display: grid; gap: 18px; max-width: 900px; }
+.intro h1 { font: 700 clamp(34px, 5.2vw, 64px)/1.05 var(--display); letter-spacing: -0.025em; }
+.intro h1 span { color: var(--muted); }
+.intro p { font-size: clamp(17px, 1.6vw, 20px); color: var(--ink-2); max-width: 62ch; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--ink-2); }
+.key span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 10px; height: 10px; border-radius: 50%; }
 
-/* ---------- top bar ---------- */
-.top { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
-.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.mark { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none;
-  background: linear-gradient(140deg, #1a2440, #0f2a22); border: 1px solid var(--line2); }
-.brand h1 { font-size: clamp(20px, 2.2vw, 26px); font-weight: 800; letter-spacing: -0.02em; }
-.brand p { color: var(--fg2); font-size: 14px; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px; }
-.tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px 6px 9px; border-radius: 999px; border: 1px solid var(--line);
-  background: rgba(16,19,26,0.7); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--fg2); white-space: nowrap; }
-.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.d-live { background: var(--live); box-shadow: 0 0 10px var(--live); }
-.d-insp { background: var(--insp); box-shadow: 0 0 10px var(--insp); }
-.d-meta { background: var(--meta); box-shadow: 0 0 10px rgba(229,231,235,0.6); }
+/* ---------- chapters (segmented control + tick ruler) ---------- */
+.chapters { display: grid; gap: 10px; }
+.seg-wrap { overflow-x: auto; padding: 4px; margin: -4px; }
+.segs { display: inline-flex; gap: 4px; padding: 4px; background: rgba(0,0,0,0.05); border-radius: 14px; min-width: max-content; }
+.segs button { border: 0; background: transparent; font: 500 14px var(--text); color: var(--ink-2); padding: 9px 14px; border-radius: 10px; cursor: pointer; min-height: 40px;
+  display: inline-flex; align-items: center; gap: 7px; transition: background 250ms var(--ease), color 250ms var(--ease), box-shadow 250ms var(--ease); white-space: nowrap; }
+.segs button:hover { color: var(--ink); background: rgba(255,255,255,0.6); }
+.segs button[aria-current="step"] { background: var(--ink); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.segs .mark { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.segs button[aria-current="step"] .mark { background: #ff8a8a; }
+.ruler { position: relative; height: 14px; background-image: linear-gradient(90deg, var(--hair-2) 1px, transparent 1px); background-size: 8px 8px; background-repeat: repeat-x; background-position: 0 6px; }
+.ruler i { position: absolute; left: 0; top: 2px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--live), var(--insp)); transition: width 600ms var(--ease); }
 
-/* ---------- scrubber ---------- */
-.scrub { display: grid; gap: 10px; }
-.scrub-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.scrub-head h2 { font-size: clamp(18px, 1.8vw, 22px); font-weight: 700; letter-spacing: -0.01em; }
-.track { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 4px; }
-.seg { appearance: none; border: 0; padding: 0; background: none; cursor: pointer; display: grid; gap: 7px; text-align: left; min-width: 0; min-height: 44px; align-content: start; }
-.seg .bar { height: 4px; border-radius: 3px; background: var(--line2); transition: background 300ms, transform 200ms var(--ease); }
-.seg .lbl { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 200ms; }
-.seg.done .bar { background: #4b5263; }
-.seg.on .bar { background: linear-gradient(90deg, var(--live), var(--insp)); }
-.seg.on .lbl { color: var(--fg); font-weight: 600; }
-.seg.key .lbl::before { content: "●"; color: var(--danger); margin-right: 4px; font-size: 8px; vertical-align: 2px; }
-.seg:hover .bar { transform: scaleY(1.8); }
-.seg:hover .lbl { color: var(--fg2); }
-@media (max-width: 760px) { .seg .lbl { display: none; } .track { gap: 3px; } }
+/* ---------- stage ---------- */
+.stage-wrap { position: relative; }
+.stage-wrap::before { content: ""; position: absolute; inset: 6% 4% -4%; z-index: 0; border-radius: 48px; filter: blur(60px); opacity: 0.55;
+  background: radial-gradient(45% 60% at 20% 40%, rgba(10,100,232,0.35), transparent 70%), radial-gradient(45% 60% at 82% 60%, rgba(18,137,90,0.30), transparent 70%); }
+.stage { position: relative; z-index: 1; background: var(--surface); border-radius: 28px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 24px 60px -20px rgba(0,0,0,0.18);
+  display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); overflow: hidden; }
+@media (max-width: 1000px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.side { padding: clamp(18px, 2.4vw, 30px); display: grid; gap: 20px; align-content: start; min-width: 0; }
+.side + .side { border-left: 1px solid var(--hair); background: #fbfbfd; }
+@media (max-width: 1000px) { .side + .side { border-left: 0; border-top: 1px solid var(--hair); } }
+.side-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.side-h h2 { font: 600 20px/1.2 var(--display); letter-spacing: -0.02em; }
+.side-h .where { font-size: 13.5px; color: var(--muted); }
+.fade { animation: fadeUp 520ms var(--ease) both; }
+@keyframes fadeUp { from { opacity: 0.001; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-/* ---------- app frame ---------- */
-.app { border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--panel), var(--bg2));
-  box-shadow: 0 40px 120px -40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04); overflow: hidden; }
-.chrome { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.015); }
-.lights { display: flex; gap: 6px; } .lights i { width: 10px; height: 10px; border-radius: 50%; background: #2b2f3b; }
-.chrome .path { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chrome .path b { color: var(--fg2); font-weight: 500; }
-.chrome .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.pill { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line2); color: var(--fg2); white-space: nowrap; }
-.grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
-@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
-.col { padding: 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
-.col + .col { border-left: 1px solid var(--line); }
-@media (max-width: 1000px) { .col + .col { border-left: 0; border-top: 1px solid var(--line); } }
-.col-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.col-head h3 { font-size: 13px; font-weight: 600; color: var(--fg2); letter-spacing: 0.01em; }
+/* the glasses view */
+.view { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; background: #e9eaee; }
+.view img.frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scenecard { position: absolute; inset: 0; display: grid; align-content: end; padding: 22px; padding-right: 46%;
+  background: radial-gradient(120% 90% at 0% 100%, #dfe3ea 0%, #eceef2 55%, #f4f5f7 100%); }
+.scenecard p { font: 600 clamp(17px, 1.7vw, 22px)/1.3 var(--display); letter-spacing: -0.015em; color: var(--ink); }
+.view.has-frame .scenecard { display: none; }
+.view .caption { position: absolute; left: 12px; bottom: 12px; right: 46%; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; color: #fff;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.view:not(.has-frame) .caption { display: none; }
+.rec { position: absolute; top: 14px; left: 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  background: rgba(255,255,255,0.82); padding: 5px 10px 5px 8px; border-radius: 999px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.rec i { width: 7px; height: 7px; border-radius: 50%; background: #ff3b30; animation: blink 1.6s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
 
-/* ---------- the wearer's view ---------- */
-.feed { position: relative; aspect-ratio: 16 / 11; max-width: 100%; border-radius: 16px; overflow: hidden; isolation: isolate;
-  background:
-    linear-gradient(rgba(6,7,10,0.15), rgba(6,7,10,0.65)),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 58px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 58px),
-    radial-gradient(ellipse at 38% 62%, #3a4150 0%, #1d2129 55%, #0d0f14 100%); }
-.feed::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.55)); z-index: 0; pointer-events: none; }
-.scanline { position: absolute; left: 0; right: 0; height: 80px; top: -80px; z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(52,211,153,0.10), transparent); animation: scan 3.2s linear infinite; }
-@keyframes scan { to { top: 100%; } }
-.corner { position: absolute; width: 22px; height: 22px; border-color: rgba(255,255,255,0.55); border-style: solid; z-index: 2; }
-.c1 { top: 14px; left: 14px; border-width: 2px 0 0 2px; } .c2 { top: 14px; right: 14px; border-width: 2px 2px 0 0; }
-.c3 { bottom: 14px; left: 14px; border-width: 0 0 2px 2px; } .c4 { bottom: 14px; right: 14px; border-width: 0 2px 2px 0; }
-.hud-top { position: absolute; top: 20px; left: 46px; z-index: 3; display: flex; gap: 10px; align-items: center; }
-.rec { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: #fff; letter-spacing: 0.08em; }
-.rec i { width: 8px; height: 8px; border-radius: 50%; background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; animation: blink 1.4s steps(1) infinite; }
-@keyframes blink { 50% { opacity: 0.25; } }
-.scene { position: absolute; left: 44px; right: 16px; bottom: 34px; z-index: 3; display: grid; gap: 4px; max-width: 54%; }
-@media (max-width: 560px) { .scene { max-width: none; } }
-.scene .mono { color: rgba(255,255,255,0.6); }
-.scene p { font-size: clamp(14px, 1.35vw, 17px); font-weight: 500; color: #fff; text-shadow: 0 1px 12px rgba(0,0,0,0.7); }
-.glass { position: absolute; top: 16px; right: 16px; z-index: 4; width: clamp(170px, 34%, 250px); padding: 12px 12px 14px; border-radius: 18px;
-  background: rgba(0,0,0,0.78); backdrop-filter: blur(8px); border: 1px solid rgba(0,212,255,0.28);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 18px 50px rgba(0,0,0,0.55), 0 0 40px rgba(0,212,255,0.08);
-  display: grid; gap: 3px; justify-items: center; text-align: center; transition: transform 400ms var(--ease); }
-@media (max-width: 560px) { .glass { position: relative; top: auto; right: auto; width: auto; margin: 12px 12px 0; } .scene { position: relative; left: auto; right: auto; bottom: auto; margin: 10px 12px 14px; } .feed { aspect-ratio: auto; } .hud-top { position: relative; top: auto; left: auto; padding: 14px 14px 0; } }
-.glass .gl-top { width: 100%; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); }
-.glass .gl-step { color: var(--cyan); }
-.glass img, .glass .noimg { width: 58%; aspect-ratio: 1; max-width: 140px; }
-.glass .noimg { display: grid; place-items: center; border: 1px dashed rgba(255,255,255,0.18); border-radius: 12px; color: rgba(255,255,255,0.4); font-size: 11px; }
-.glass .gl-short { font-weight: 700; font-size: clamp(13px, 1.2vw, 15.5px); line-height: 1.25; }
-.glass .gl-tip { font-size: 11.5px; color: var(--warn); min-height: 14px; }
-.glass .gl-status { font-weight: 600; font-size: 12.5px; }
-.feed.alarm::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; box-shadow: inset 0 0 90px rgba(255,90,90,0.75); animation: pulse 1s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: 0.45; } }
-.alert { position: absolute; z-index: 5; left: 50%; top: 46%; transform: translate(-50%, -50%); background: var(--danger); color: #fff; font-weight: 800;
-  font-size: clamp(18px, 2.4vw, 30px); padding: 10px 20px; border-radius: 14px; box-shadow: 0 16px 50px rgba(255,90,90,0.45); white-space: nowrap; animation: pop 420ms var(--ease) both; }
-@keyframes pop { from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); } }
-
-.talk { display: grid; gap: 10px; min-height: 120px; align-content: start; }
-.msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; animation: rise 380ms var(--ease) both; }
-.msg .av { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-family: var(--mono); font-size: 10px; font-weight: 600; }
-.msg.you .av { background: #1c2029; color: var(--fg2); border: 1px solid var(--line2); }
-.msg.coach .av { background: rgba(77,132,255,0.16); color: var(--live); border: 1px solid rgba(77,132,255,0.45); }
-.msg.urgent .av { background: rgba(255,90,90,0.16); color: var(--danger); border-color: rgba(255,90,90,0.5); }
-.msg .who { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted); }
-.msg.coach .who { color: var(--live); } .msg.urgent .who { color: var(--danger); }
-.msg .txt { font-size: 15px; color: var(--fg); }
-.msg.urgent .txt { font-weight: 600; }
-
-/* ---------- the system console ---------- */
-.card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); overflow: hidden; }
-.card-h { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.07em; flex-wrap: wrap; }
-.card-h .name { font-weight: 600; }
-.card-h .sub { color: var(--muted); letter-spacing: 0.02em; font-family: var(--font); font-size: 12.5px; }
-.card-h .state { margin-left: auto; }
-.card-b { padding: 12px 13px; display: grid; gap: 10px; }
-.card.live { border-color: rgba(77,132,255,0.32); } .card.live .name { color: var(--live); }
-.card.insp { border-color: rgba(52,211,153,0.32); } .card.insp .name { color: var(--insp); }
-.state.speaking { color: var(--live); border-color: rgba(77,132,255,0.5); }
-.state.urgent { color: var(--danger); border-color: rgba(255,90,90,0.5); }
-.state.ok { color: var(--insp); border-color: rgba(52,211,153,0.5); }
-.state.warn { color: var(--warn); border-color: rgba(255,176,32,0.5); }
-.action { font-size: 14.5px; color: var(--fg2); }
-.action b { color: var(--fg); font-weight: 600; }
-code.tool { font-family: var(--mono); font-size: 12.5px; color: #a9c2ff; background: rgba(77,132,255,0.10); border: 1px solid rgba(77,132,255,0.3); padding: 2px 7px; border-radius: 7px; }
-.wave { display: inline-flex; gap: 2px; align-items: center; height: 14px; }
-.wave i { width: 2px; border-radius: 2px; background: var(--live); animation: wv 900ms ease-in-out infinite; }
-.wave i:nth-child(2) { animation-delay: 120ms; } .wave i:nth-child(3) { animation-delay: 240ms; } .wave i:nth-child(4) { animation-delay: 360ms; }
-@keyframes wv { 0%, 100% { height: 3px; } 50% { height: 13px; } }
-
-.tree { width: 100%; overflow-x: auto; }
-.tree svg { display: block; width: 100%; min-width: 440px; height: auto; }
-.tree .nd rect { fill: rgba(52,211,153,0.08); stroke: var(--insp); stroke-width: 1.4; }
-.tree .nd .k { font: 500 9.5px var(--mono); letter-spacing: 0.08em; fill: var(--muted); }
-.tree .nd .v { font: 700 13px var(--font); fill: var(--fg); }
-.tree .ln { stroke: rgba(52,211,153,0.35); stroke-width: 1.6; fill: none; }
-.tree .pulse { stroke: var(--insp); stroke-width: 2.4; fill: none; stroke-dasharray: 10 120; animation: flow 1.6s linear infinite; }
-@keyframes flow { to { stroke-dashoffset: -130; } }
-
-.qs { display: grid; gap: 10px; }
-.q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 10px; align-items: center; }
-.q .label { font-size: 13.5px; color: var(--fg2); min-width: 0; }
-.q .val { font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; display: inline-flex; gap: 6px; align-items: center; }
-.q .val em { font-style: normal; font-size: 10.5px; padding: 1px 6px; border-radius: 6px; letter-spacing: 0.06em; }
-.q .meter { grid-column: 1 / -1; position: relative; height: 6px; border-radius: 4px; background: #1d212b; }
-.q .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; width: 0; transition: width 700ms var(--ease); }
-.q .meter::after { content: ""; position: absolute; left: 75%; top: -4px; bottom: -4px; width: 1.5px; background: rgba(255,255,255,0.45); }
-.q.pass .val { color: var(--insp); } .q.pass .meter i { background: linear-gradient(90deg, #1f8f66, var(--insp)); } .q.pass em { background: rgba(52,211,153,0.14); }
-.q.fail .val { color: var(--danger); } .q.fail .meter i { background: linear-gradient(90deg, #b33939, var(--danger)); } .q.fail em { background: rgba(255,90,90,0.16); }
-.q.warn .val { color: var(--warn); } .q.warn .meter i { background: linear-gradient(90deg, #9a6a12, var(--warn)); } .q.warn em { background: rgba(255,176,32,0.16); }
-.q.idle .val { color: var(--muted); } .q.idle .meter i { background: #4a4f5c; } .q.idle em { display: none; }
-.thresh { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--muted); }
-.empty { font-size: 13.5px; color: var(--muted); }
-
-.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 182px; overflow: auto; }
-.log li { display: grid; grid-template-columns: 58px 10px minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; color: var(--fg2); }
-.log li .t { font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.log li i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.log li.now { color: var(--fg); animation: rise 380ms var(--ease) both; }
-.log .insp i { background: var(--insp); } .log .live i { background: var(--live); } .log .danger i { background: var(--danger); } .log .warn i { background: var(--warn); }
-.log .danger { color: #ffb4b4; }
-
-.why { border-top: 1px dashed var(--line2); padding-top: 12px; display: grid; gap: 8px; }
-.why p { font-size: 14px; color: var(--fg2); line-height: 1.55; max-width: 72ch; }
-.facts { display: flex; flex-wrap: wrap; gap: 6px; }
-.fact { font-size: 12px; padding: 4px 9px; border-radius: 8px; background: #191d26; border: 1px solid var(--line); color: var(--fg2); }
-.fact b { color: var(--fg); font-weight: 600; }
-
-/* ---------- controls ---------- */
-.controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.015); }
-.btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn { border: 1px solid var(--line2); background: var(--panel2); border-radius: 12px; padding: 10px 16px; min-height: 44px; font-weight: 600; font-size: 14px; cursor: pointer;
-  transition: transform 160ms var(--ease), background 200ms, border-color 200ms; display: inline-flex; align-items: center; gap: 8px; }
-.btn:hover { transform: translateY(-1px); border-color: #3a4052; }
-.btn:active { transform: translateY(1px) scale(0.98); }
-.btn.primary { background: var(--fg); color: #06070a; border-color: var(--fg); }
-.btn:disabled { opacity: 0.35; cursor: default; transform: none; }
-.kbd { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
-.kbd kbd { font-family: inherit; border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--fg2); }
-
-/* ---------- summary ---------- */
-.sum { padding: 22px; display: grid; gap: 22px; }
-.sum h2 { font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; letter-spacing: -0.02em; }
-.sum .lead { font-size: 15.5px; color: var(--fg2); max-width: 75ch; }
-.arch { overflow-x: auto; }
-.arch svg { display: block; width: 100%; min-width: 760px; height: auto; }
-.arch .box { fill: #141822; stroke: var(--line2); stroke-width: 1.2; }
-.arch .t1 { font: 700 15px var(--font); fill: var(--fg); }
-.arch .t2 { font: 500 11px var(--mono); letter-spacing: 0.06em; fill: var(--muted); }
-.arch .wire { stroke: #333a4b; stroke-width: 1.6; fill: none; }
-.arch .flowl { stroke-width: 2.6; fill: none; stroke-dasharray: 12 140; animation: flow2 2.2s linear infinite; }
-@keyframes flow2 { to { stroke-dashoffset: -152; } }
-.nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
-.num { border: 1px solid var(--line); border-radius: 14px; padding: 14px 15px; background: var(--panel2); transition: transform 200ms var(--ease), border-color 200ms; }
-.num:hover { transform: translateY(-2px); border-color: #3a4052; }
-.num b { display: block; font-size: clamp(22px, 2.2vw, 28px); font-weight: 800; letter-spacing: -0.02em; color: var(--insp); white-space: nowrap; }
-.num span { font-size: 13px; color: var(--fg2); }
-.cta { display: flex; flex-wrap: wrap; gap: 10px; }
-.cta a { text-decoration: none; }
-
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
-footer p { max-width: 90ch; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .scanline { display: none; }
+.hud { position: absolute; top: 14px; right: 14px; width: clamp(160px, 40%, 248px); border-radius: 22px; padding: 12px 12px 14px; background: var(--glass); color: #fff;
+  display: grid; gap: 4px; justify-items: center; text-align: center; box-shadow: 0 18px 40px -12px rgba(0,0,0,0.45); }
+.hud .top { width: 100%; display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.5); }
+.hud .top b { color: var(--cyan); font-weight: 600; }
+.hud img, .hud .noimg { width: 56%; max-width: 132px; aspect-ratio: 1; }
+.hud .noimg { display: grid; place-items: center; }
+.hud .noimg .ico { width: 44px; height: 44px; stroke: rgba(255,255,255,0.75); stroke-width: 1.6; }
+.hud .short { font: 600 clamp(13.5px, 1.25vw, 16px)/1.25 var(--display); }
+.hud .tip { font-size: 12px; color: #ffc46b; min-height: 15px; }
+.hud .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; margin-top: 2px; }
+.hud .status .ico { width: 14px; height: 14px; }
+.t-insp { color: #4ade9a; } .t-danger { color: #ff7a7a; } .t-warn { color: #ffc46b; } .t-live { color: #8ab4ff; }
+.view.alarm { box-shadow: inset 0 0 0 3px var(--danger); }
+.toast { position: absolute; left: 31%; top: 52%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  background: var(--danger); color: #fff; font: 700 clamp(18px, 2.2vw, 28px) var(--display); letter-spacing: -0.02em; padding: 12px 22px; border-radius: 16px;
+  box-shadow: 0 20px 40px -12px rgba(217,45,45,0.55); animation: pop 520ms var(--ease) both; }
+.toast .ico { width: 24px; height: 24px; stroke-width: 2.4; }
+@keyframes pop { from { opacity: 0.001; transform: translate(-50%, -50%) scale(0.9); } }
+@media (max-width: 600px) {
+  .view { aspect-ratio: auto; display: grid; }
+  .view img.frame, .scenecard { position: relative; inset: auto; }
+  .view img.frame { aspect-ratio: 4 / 3; height: auto; }
+  .scenecard { padding: 54px 18px 18px; }
+  .view .caption { position: relative; left: auto; right: auto; bottom: auto; margin: 0; border-radius: 0; background: #3a3a3c; }
+  .hud { position: relative; top: auto; right: auto; width: auto; margin: 12px; }
+  .toast { font-size: 17px; }
 }
+
+/* conversation */
+.talk { display: grid; gap: 8px; min-height: 96px; align-content: start; }
+.msg { max-width: 88%; padding: 10px 14px; border-radius: 18px; font-size: 15.5px; line-height: 1.42; animation: fadeUp 480ms var(--ease) both; }
+.msg small { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.msg.you { justify-self: end; background: var(--fill); border-bottom-right-radius: 6px; }
+.msg.you small { color: var(--muted); }
+.msg.coach { justify-self: start; background: var(--live-soft); border-bottom-left-radius: 6px; }
+.msg.coach small { color: var(--live); }
+.msg.urgent { background: var(--danger-soft); }
+.msg.urgent small { color: var(--danger); }
+
+/* inside: three sections, hairline-separated (no nested cards) */
+.block { display: grid; gap: 12px; }
+.block + .block { border-top: 1px solid var(--hair); padding-top: 18px; }
+.bh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bh h3 { font: 600 15.5px var(--display); letter-spacing: -0.01em; }
+.bh .role { font-size: 13.5px; color: var(--muted); }
+.chip { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.chip .ico { width: 13px; height: 13px; }
+.c-live { color: var(--live); background: var(--live-soft); } .c-insp { color: var(--insp); background: var(--insp-soft); }
+.c-danger { color: var(--danger); background: var(--danger-soft); } .c-warn { color: var(--warn); background: var(--warn-soft); } .c-idle { color: var(--muted); background: var(--fill); }
+.does { font-size: 15px; color: var(--ink-2); }
+.does b { color: var(--ink); font-weight: 600; }
+code.call { font: 500 13px ui-monospace, "SF Mono", Consolas, monospace; color: var(--live); background: var(--live-soft); padding: 2px 7px; border-radius: 7px; white-space: nowrap; }
+.bars { display: inline-flex; gap: 2px; align-items: center; height: 12px; }
+.bars i { width: 2px; border-radius: 2px; background: currentColor; animation: wave 1s ease-in-out infinite; }
+.bars i:nth-child(2) { animation-delay: 140ms; } .bars i:nth-child(3) { animation-delay: 280ms; }
+@keyframes wave { 0%, 100% { height: 3px; } 50% { height: 11px; } }
+
+.flow { overflow-x: auto; }
+.flow svg { display: block; width: 100%; min-width: 420px; height: auto; }
+.flow .n { fill: var(--insp-soft); stroke: rgba(18,137,90,0.35); }
+.flow .k { font: 500 10.5px var(--text); fill: var(--muted); }
+.flow .v { font: 600 13.5px var(--display); fill: var(--ink); }
+.flow .w { stroke: rgba(18,137,90,0.3); stroke-width: 1.5; fill: none; }
+.flow .p { stroke: var(--insp); stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-dasharray: 8 140; animation: run 1.8s linear infinite; }
+@keyframes run { to { stroke-dashoffset: -148; } }
+
+.checks { display: grid; gap: 11px; }
+.check { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; }
+.check .q { font-size: 14.5px; color: var(--ink-2); min-width: 0; }
+.check .pct { font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+.check .pct em { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+.track { grid-column: 1 / -1; position: relative; height: 6px; border-radius: 4px; background: var(--fill); }
+.track i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; width: 0; transition: width 900ms var(--ease); }
+.track::after { content: ""; position: absolute; left: 75%; top: -4px; bottom: -4px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.25; }
+.pass .pct { color: var(--insp); } .pass .track i { background: var(--insp); } .pass em { background: var(--insp-soft); }
+.fail .pct { color: var(--danger); } .fail .track i { background: var(--danger); } .fail em { background: var(--danger-soft); }
+.warn .pct { color: var(--warn); } .warn .track i { background: #e39b2b; } .warn em { background: var(--warn-soft); }
+.idle .pct { color: var(--muted); } .idle .track i { background: #c7c7cc; } .idle em { display: none; }
+.note { font-size: 13px; color: var(--muted); }
+
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.log li { display: grid; grid-template-columns: 44px 16px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 14px; color: var(--muted); }
+.log li .t { font-size: 12.5px; padding-top: 1px; }
+.log li .ico { width: 15px; height: 15px; margin-top: 3px; }
+.log li.now { color: var(--ink); animation: fadeUp 480ms var(--ease) both; }
+.log .k-insp .ico { color: var(--insp); } .log .k-live .ico { color: var(--live); } .log .k-danger .ico { color: var(--danger); } .log .k-warn .ico { color: var(--warn); }
+
+.why { background: var(--fill); border-radius: 16px; padding: 16px 18px; display: grid; gap: 10px; }
+.why h3 { font: 600 15px var(--display); }
+.why p { font-size: 15px; color: var(--ink-2); max-width: 66ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 20px; min-height: 46px; font: 600 15px var(--text); cursor: pointer;
+  background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--hair-2); transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), background 200ms; text-decoration: none; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px var(--hair-2), 0 8px 18px -10px rgba(0,0,0,0.3); }
+.btn:active { transform: translateY(1px) scale(0.98); }
+.btn.primary { background: var(--ink); color: #fff; box-shadow: none; }
+.btn.primary:hover { background: #000; box-shadow: 0 10px 22px -10px rgba(0,0,0,0.5); }
+.btn:disabled { opacity: 0.35; cursor: default; transform: none; box-shadow: 0 0 0 1px var(--hair); }
+.hint { font-size: 13.5px; color: var(--muted); }
+.hint kbd { font: 600 12px var(--text); padding: 2px 7px; border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 1px var(--hair-2), 0 1px 0 var(--hair-2); color: var(--ink-2); }
+
+/* summary */
+.sum { grid-column: 1 / -1; padding: clamp(22px, 3vw, 40px); display: grid; gap: 28px; }
+.sum h2 { font: 700 clamp(28px, 3.4vw, 44px)/1.1 var(--display); letter-spacing: -0.022em; max-width: 20ch; }
+.sum .lead { font-size: 17px; color: var(--ink-2); max-width: 64ch; }
+.arch { overflow-x: auto; }
+.arch svg { display: block; width: 100%; min-width: 740px; height: auto; }
+.arch .b { fill: var(--surface); stroke: var(--hair-2); }
+.arch .h { font: 600 16px var(--display); fill: var(--ink); }
+.arch .s { font: 500 12px var(--text); fill: var(--muted); }
+.arch .w { stroke: #d1d1d6; stroke-width: 1.6; fill: none; }
+.arch .p { stroke-width: 3; fill: none; stroke-linecap: round; stroke-dasharray: 10 160; animation: run2 2.4s linear infinite; }
+@keyframes run2 { to { stroke-dashoffset: -170; } }
+.spec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; }
+@media (max-width: 760px) { .spec { grid-template-columns: minmax(0, 1fr); } }
+.spec div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--hair); }
+.spec dt { font-size: 15px; color: var(--ink-2); }
+.spec dd { margin: 0; font: 700 22px var(--display); letter-spacing: -0.02em; white-space: nowrap; }
+
+footer { font-size: 13.5px; color: var(--muted); display: grid; gap: 4px; max-width: 90ch; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.6v.1"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8"/><path d="M12 17.2v.1"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3 9a13 13 0 0 1 18 0"/><path d="M6.5 12.5a8 8 0 0 1 11 0"/><path d="M10 16a3 3 0 0 1 4 0"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13"/><path d="M15.5 5.5v13"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 24 24"><path d="M7 4h10"/><path d="M8 4v9a4 4 0 0 0 8 0V4"/><path d="M12 17v3"/><path d="M9 20h6"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7l-5 5 5 5"/><path d="M15.5 7l5 5-5 5"/></symbol>
+</svg>
+
 <div class="wrap">
-  <header class="top enter">
-    <div class="brand">
-      <div class="mark" aria-hidden="true">
-        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="1.5" y="8" width="10" height="9" rx="4" stroke="#4d84ff" stroke-width="2"/><rect x="14.5" y="8" width="10" height="9" rx="4" stroke="#34d399" stroke-width="2"/><path d="M11.5 11.5h3" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round"/></svg>
-      </div>
-      <div>
-        <h1>Handyman</h1>
-        <p>Your personal handyman on Meta glasses: hands-free, real-time guidance, mistakes caught before they happen.</p>
-      </div>
-    </div>
-    <div class="legend" aria-label="Colour code">
-      <span class="tag"><span class="dot d-live"></span>GEMINI LIVE · voice</span>
-      <span class="tag"><span class="dot d-insp"></span>GEMINI DECISIONS API · inspector</span>
-      <span class="tag"><span class="dot d-meta"></span>META DEVICE ACCESS TOOLKIT</span>
+  <header class="intro fade">
+    <h1>One repair. <span>Every step checked on camera.</span></h1>
+    <p>Handyman is a repair coach on Meta glasses: hands-free, real-time guidance, mistakes caught before they happen. Step through one real repair, unclogging a sink, and see what the wearer experiences next to what the system is doing.</p>
+    <div class="key" aria-label="Colour key">
+      <span><i class="sw" style="background:var(--live)"></i>Gemini Live, the voice</span>
+      <span><i class="sw" style="background:var(--insp)"></i>Gemini Decisions API, the inspector</span>
+      <span><i class="sw" style="background:var(--ink)"></i>Meta Device Access Toolkit, the glasses</span>
     </div>
   </header>
 
-  <section class="scrub enter d1" aria-label="Walkthrough">
-    <div class="scrub-head">
-      <h2 id="stage-title">One repair, step by step: what you see, and what the system does</h2>
-      <span class="mono" id="counter"></span>
+  <nav class="chapters fade" aria-label="Moments">
+    <div class="seg-wrap"><div class="segs" id="segs"></div></div>
+    <div class="ruler" aria-hidden="true"><i id="ruler"></i></div>
+  </nav>
+
+  <div class="stage-wrap">
+    <section class="stage" id="stage" aria-live="polite"></section>
+  </div>
+
+  <div class="controls">
+    <div class="btns">
+      <button type="button" class="btn" id="prev"><svg class="ico"><use href="#i-left"/></svg>Back</button>
+      <button type="button" class="btn primary" id="next">Next moment<svg class="ico"><use href="#i-right"/></svg></button>
+      <button type="button" class="btn" id="play" aria-pressed="false"><svg class="ico"><use href="#i-play"/></svg><span>Play</span></button>
     </div>
-    <div class="track" id="track" role="tablist" aria-label="Moments"></div>
-  </section>
+    <span class="hint">Step with <kbd>←</kbd> <kbd>→</kbd> · <span id="count"></span></span>
+  </div>
 
-  <section class="app enter d2" aria-label="Walkthrough player">
-    <div class="chrome">
-      <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
-      <span class="path" id="path"></span>
-      <span class="right"><span class="pill" id="fps"></span></span>
-    </div>
-
-    <div class="grid" id="stage">
-      <div class="col">
-        <div class="col-head"><h3>What the wearer sees and hears</h3><span class="mono">Ray-Ban Display</span></div>
-        <div class="feed" id="feed">
-          <div class="scanline" aria-hidden="true"></div>
-          <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
-          <div class="hud-top"><span class="rec"><i></i>CAMERA</span><span class="mono" style="color:rgba(255,255,255,0.55)">504×896 · DAT stream</span></div>
-          <div class="glass" aria-label="Glasses display">
-            <div class="gl-top"><span>DISPLAY</span><span class="gl-step" id="g-step"></span></div>
-            <img id="g-img" alt="" width="140" height="140">
-            <div class="noimg" id="g-noimg" hidden>text step</div>
-            <div class="gl-short" id="g-short"></div>
-            <div class="gl-tip" id="g-tip"></div>
-            <div class="gl-status" id="g-status"></div>
-          </div>
-          <div class="scene"><span class="mono">In view</span><p id="scene"></p></div>
-        </div>
-        <div class="talk" id="talk" aria-live="polite"></div>
-      </div>
-
-      <div class="col">
-        <div class="col-head"><h3>Inside the brain</h3><span class="mono">server + 2 Gemini models</span></div>
-        <div class="card live">
-          <div class="card-h"><span class="dot d-live"></span><span class="name">GEMINI LIVE</span><span class="sub">the voice</span><span class="pill state" id="live-state"></span></div>
-          <div class="card-b"><p class="action" id="live"></p></div>
-        </div>
-        <div class="card insp">
-          <div class="card-h"><span class="dot d-insp"></span><span class="name">GEMINI DECISIONS API</span><span class="sub" id="insp-what"></span><span class="pill state" id="insp-state"></span></div>
-          <div class="card-b">
-            <div class="tree" id="tree" hidden></div>
-            <div class="qs" id="qs"></div>
-            <span class="thresh" id="thresh">│ = 75% threshold · a step passes after 3 confident checks in a row</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h"><span class="name" style="color:var(--fg2)">EVENT LOG</span><span class="sub">what the server did</span></div>
-          <div class="card-b"><ol class="log" id="log"></ol></div>
-        </div>
-        <div class="why">
-          <span class="mono">Design decision</span>
-          <p id="why"></p>
-          <div class="facts" id="facts"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="summary" hidden></div>
-
-    <div class="controls">
-      <div class="btns">
-        <button type="button" class="btn" id="prev">← Back</button>
-        <button type="button" class="btn primary" id="next">Next moment →</button>
-        <button type="button" class="btn" id="play" aria-pressed="false">▶ Play</button>
-      </div>
-      <span class="kbd">Use <kbd>←</kbd> <kbd>→</kbd> to step</span>
-    </div>
-  </section>
-
-  <footer class="enter d3">
+  <footer>
     <p>A walkthrough of the system we built and tested at Junction 2026, not a live connection. The procedure, its checks and warnings, the coach's lines and the glasses cards are the real ones from our code; confidence values are representative of our logged test runs.</p>
-    <span>Meta: AI Glasses for Everyone, Everyday · Google DeepMind: Best Use of Gemini API</span>
+    <p>Meta: AI Glasses for Everyone, Everyday · Google DeepMind: Best Use of Gemini API</p>
   </footer>
 </div>
 
 <script>
-const C = (n) => `cards/${n}.svg`;
 // Mirrors the real system: server/src/tasks.js (bottle_trap), diagnosis.js, task-runner.js, orchestrator.js.
-// q: [question, confidence, state]  state: pass (≥ threshold) · fail (mistake firing) · warn (unsure) · idle
+// frame: a still from our glasses footage in frames/ (falls back to a scene card when missing).
+// checks: [question, confidence, state]  state: pass (≥ 75% threshold) · fail (mistake firing) · warn (unsure) · idle
 const S = [
-  { tab: "Start", path: "session / start", scene: "A bathroom basin full of standing water. The wearer has just pressed Start.",
-    card: "02-listening", short: "Listening", status: "● Camera + mic on", tone: "insp",
+  { tab: "Start", where: "Session starts", frame: "sink", scene: "A bathroom basin full of standing water. The wearer has just pressed Start.",
+    card: "02-listening", short: "Listening", status: ["insp", "mic", "Camera and mic on"],
     talk: [["you", "Hey, my sink is draining really slowly. Can you take a look?"]],
-    liveState: ["speaking", "listening"], live: "Hears the request and calls <code class=\"tool\">diagnose(\"sink\")</code> instead of guessing.",
-    inspWhat: "idle", inspState: ["", "waiting"], q: [],
-    log: [["live", "Session started · camera + mic streaming"], ["live", "Tool call: diagnose(\"sink\")"]], fps: "0.5 fps · idle",
+    live: ["c-live", "listening", "Hears the request and calls <code class=\"call\">diagnose(\"sink\")</code> instead of guessing."],
+    insp: ["c-idle", "waiting", "Waits until a diagnosis or a procedure starts."], checks: [],
+    log: [["live", "Session started, camera and mic streaming"], ["live", "Called diagnose(\"sink\")"]], cam: "0.5 frames a second while idle",
     why: "Nothing streams before the wearer presses Start, and no video is stored. Gemini Live runs the conversation but is told not to guess about problems it hasn't checked, so the looking goes to the inspector.",
     facts: [["Consent", "press Start"], ["Video stored", "none"]] },
 
-  { tab: "Diagnosis", path: "diagnose / sink", scene: "Standing water in the basin. Under the sink: a cylinder-shaped trap with a screw-off bottom cup.",
-    card: "09-confirm", short: "Clogged sink?", status: "Found it", tone: "insp",
+  { tab: "Diagnosis", where: "Diagnosis", frame: "sink", scene: "Standing water in the basin. Under the sink: a cylinder-shaped trap with a screw-off bottom cup.",
+    card: "09-confirm", short: "Clogged sink?", status: ["insp", "check", "Found it"],
     talk: [["coach", "Looks like a slow drain, and you've got a bottle trap. Want to fix it together?"], ["you", "Yes, let's do it."]],
-    liveState: ["speaking", "speaking"], live: "Gets the verified diagnosis, says it in one sentence, and on \"yes\" calls <code class=\"tool\">start_task(\"bottle_trap\")</code>.",
-    inspWhat: "decision tree", inspState: ["ok", "94% sure"],
-    tree: [["PROBLEM", "Slow drain · 94%"], ["TRAP TYPE", "Bottle trap · 91%"], ["PROCEDURE", "Bottle trap · 7 steps"]],
-    q: [["Standing water in the basin?", 0.93, "pass"], ["Water leaking under the sink?", 0.08, "idle"], ["Hazard: spraying water or wet electrics?", 0.03, "idle"], ["Too dark or blurry?", 0.06, "idle"]],
-    log: [["insp", "Diagnosis: slow drain + bottle trap (2 confident checks, ~1.3 s)"], ["live", "Tool call: start_task(\"bottle_trap\")"]], fps: "2 fps · diagnosing",
+    live: ["c-live", "speaking", "Says the verified diagnosis in one sentence, and on “yes” calls <code class=\"call\">start_task(\"bottle_trap\")</code>."],
+    insp: ["c-insp", "94% sure", "Runs the whole decision tree in one call per frame."],
+    tree: [["Problem", "Slow drain, 94%"], ["Trap type", "Bottle trap, 91%"], ["Procedure", "Bottle trap, 7 steps"]],
+    checks: [["Standing water in the basin?", 0.93, "pass"], ["Water leaking under the sink?", 0.08, "idle"], ["Hazard: spraying water or wet electrics?", 0.03, "idle"]],
+    log: [["insp", "Diagnosed a slow drain and a bottle trap in about 1.3 s"], ["live", "Called start_task(\"bottle_trap\")"]], cam: "2 frames a second while diagnosing",
     why: "Advice from the Google DeepMind team: one problem at a time, as a decision tree. The problem, the trap type, a confirming check and the hazards all go in one Decisions API call, which costs about the same as one question. The trap type picks the procedure; Finnish bathroom basins usually have bottle traps.",
-    facts: [["Questions per call", "up to 16"], ["Per check", "~0.3 s"]] },
+    facts: [["Questions per call", "up to 16"], ["Per check", "about 0.3 s"]] },
 
-  { tab: "Step 1", path: "bottle_trap / 1 of 7", scene: "The wearer lifts the pop-up stopper out of the drain. Hair is wrapped around it.",
-    card: "11-step-1-stopper", step: "1/7", short: "Pull the stopper out", tip: "Used drain cleaner today? Stop.", status: "✓ Done", tone: "insp",
+  { tab: "Step 1", where: "Step 1 of 7", frame: "stopper", scene: "The wearer lifts the pop-up stopper out of the drain. Hair is wrapped around it.",
+    card: "11-step-1-stopper", step: "1/7", short: "Pull the stopper out", tip: "Used drain cleaner today? Stop.", status: ["insp", "check", "Done"],
     talk: [["coach", "First: have you poured any drain cleaner in today? If not, lift the stopper out and pull off any hair."], ["you", "No drain cleaner."]],
-    liveState: ["speaking", "speaking"], live: "Asks the safety question a camera can't answer (chemicals), then gives the step in its own words.",
-    inspWhat: "verifying step 1", inspState: ["ok", "verified"],
-    q: [["Sink area in view?", 0.95, "pass"], ["Stopper lifted out of the drain?", 0.88, "pass"]],
-    log: [["insp", "✓ Step 1 verified on camera (~1.2 s after it happened)"]], fps: "2 fps · procedure",
-    why: "Opening a trap after drain cleaner can cause chemical burns, so the first instruction is a hard safety question. The step itself counts only when the camera confirms it: the voice can never mark a step done.",
-    facts: [["Pass rule", "≥ 75%, 3× in a row"]] },
+    live: ["c-live", "speaking", "Asks the safety question a camera can't answer, about chemicals, then gives the step in its own words."],
+    insp: ["c-insp", "verified", "Verifies step 1."],
+    checks: [["Sink area in view?", 0.95, "pass"], ["Stopper lifted out of the drain?", 0.88, "pass"]],
+    log: [["insp", "Step 1 verified on camera, about 1.2 s after it happened"]], cam: "2 frames a second during the repair",
+    why: "Opening a trap after using drain cleaner can cause chemical burns, so the first instruction is a hard safety question. The step itself counts only when the camera confirms it: the voice can never mark a step done.",
+    facts: [["Pass rule", "75% or more, three checks in a row"]] },
 
-  { tab: "The catch", key: true, path: "bottle_trap / 2 of 7 · safety step", scene: "The wearer opens the cabinet and reaches for the trap's bottom cup. No bucket underneath.",
-    card: "22-careful", step: "2/7", short: "Bucket first", status: "⚠ Stop", tone: "danger", alarm: "⚠ Wait! Bucket first",
+  { tab: "The catch", key: true, where: "Step 2 of 7, a safety step", frame: "reach", scene: "The wearer opens the cabinet and reaches for the trap's bottom cup. No bucket underneath.",
+    card: "22-careful", step: "2/7", short: "Bucket first", status: ["danger", "alert", "Stop"], alarm: "Wait! Bucket first",
     talk: [["coach urgent", "Wait! Don't open it yet. Bucket first, the water in there will spill everywhere."], ["you", "Oh, right."]],
-    liveState: ["urgent", "interrupting"], live: "Receives an <b>URGENT</b> note and cuts itself off mid-sentence to say the warning at once.",
-    inspWhat: "watching for beginner mistakes", inspState: ["urgent", "mistake"],
-    q: [["Hand touching the trap?", 0.88, "fail"], ["Bucket directly under the trap?", 0.06, "idle"]],
-    log: [["danger", "⚠ Mistake: hand on the trap, no bucket (2 checks, ~1 s)"], ["live", "Urgent note → coach interrupts"]], fps: "2 fps · risky step",
+    live: ["c-danger", "interrupting", "Receives an <b>urgent</b> note and cuts itself off mid-sentence to say the warning at once."],
+    insp: ["c-danger", "mistake", "Watches for the mistakes beginners make on this step."],
+    checks: [["Hand touching the trap?", 0.88, "fail"], ["Bucket directly under the trap?", 0.06, "idle"]],
+    log: [["danger", "Mistake caught: a hand on the trap and no bucket"], ["live", "Urgent note sent, the coach interrupts itself"]], cam: "2 frames a second on a risky step",
     why: "Each step carries the mistakes beginners actually make, from manufacturer instructions. Reaching for the trap before the bucket is there is caught on camera, and the coach stops you before any water spills. This is the Decisions API working in real time.",
     facts: [["Source", "Hansgrohe trap instructions"], ["Safety step", "can't be skipped"]] },
 
-  { tab: "Step 2", path: "bottle_trap / 2 of 7 · safety step", scene: "Gloves on. A bucket now stands directly under the trap.",
-    card: "17-correct", step: "2/7", short: "Bucket under the trap", tip: "Gloves on", status: "✓ Done", tone: "insp",
+  { tab: "Step 2", where: "Step 2 of 7, a safety step", frame: "bucket", scene: "Gloves on. A bucket now stands directly under the trap.",
+    card: "17-correct", step: "2/7", short: "Bucket under the trap", tip: "Gloves on", status: ["insp", "check", "Done"],
     talk: [["coach", "Good, the bucket's in place. Now hold the trap body still and turn the bottom cup to the left, by hand."]],
-    liveState: ["speaking", "speaking"], live: "Confirms in one sentence, then gives the next step. Non-urgent notes wait until it finishes speaking, so it never talks over itself.",
-    inspWhat: "verifying the safety step", inspState: ["ok", "verified"],
-    q: [["Bucket directly under the trap?", 0.92, "pass"], ["Hand touching the trap?", 0.41, "idle"]],
-    log: [["insp", "✓ Safety step verified"]], fps: "2 fps · risky step",
+    live: ["c-live", "speaking", "Confirms in one sentence, then gives the next step. Non-urgent notes wait until it finishes speaking, so it never talks over itself."],
+    insp: ["c-insp", "verified", "Verifies the safety step."],
+    checks: [["Bucket directly under the trap?", 0.92, "pass"], ["Hand touching the trap?", 0.41, "idle"]],
+    log: [["insp", "Safety step verified"]], cam: "2 frames a second on a risky step",
     why: "A safety step has to be seen to be done; the coach can't skip it even if asked. A step also can't pass while a mistake signal is above 50%, so a half-done move doesn't slip through.",
-    facts: [["Blocks passing", "mistake signal ≥ 50%"]] },
+    facts: [["Blocks passing", "a mistake signal above 50%"]] },
 
-  { tab: "Step 3", path: "bottle_trap / 3 of 7", scene: "One hand holds the trap body, the other unscrews the bottom cup. Dirty water drops into the bucket.",
-    card: null, step: "3/7", short: "Hold the trap, unscrew the cup", tip: "Turn the cup left, by hand", status: "👁 Watching…", tone: "live",
+  { tab: "Step 3", where: "Step 3 of 7", frame: "unscrew", scene: "One hand holds the trap body, the other unscrews the bottom cup. Dirty water drops into the bucket.",
+    card: null, step: "3/7", short: "Hold the trap, unscrew the cup", tip: "Turn the cup left, by hand", status: ["live", "eye", "Watching"],
     talk: [["you", "Why do I hold the top part?"], ["coach", "So the joints higher up don't twist loose and start a new leak."]],
-    liveState: ["speaking", "answering"], live: "Answers \"why?\" from the sourced knowledge pack in its context (21 sources), not from guesswork.",
-    inspWhat: "verifying + watching for mistakes", inspState: ["ok", "verified"],
-    q: [["Bottom cup removed (gap under the trap)?", 0.9, "pass"], ["Water spilling outside the bucket?", 0.04, "idle"], ["Pliers on the plastic?", 0.02, "idle"], ["Cracked or corroded parts?", 0.03, "idle"]],
-    log: [["live", "Answered \"why?\" from the knowledge pack"], ["insp", "✓ Step 3 verified · no mistake firing"]], fps: "2 fps · procedure",
-    why: "The whole knowledge pack (Hansgrohe and Prevex instructions, Finnish housing guidance) fits in Gemini Live's context, so no retrieval step can miss something. Cracked or corroded parts would trigger a hard stop and a pointer to a plumber or the housing company.",
+    live: ["c-live", "answering", "Answers “why?” from the sourced knowledge pack in its context, built from 21 sources."],
+    insp: ["c-insp", "verified", "Verifies step 3 and watches for mistakes."],
+    checks: [["Bottom cup removed?", 0.9, "pass"], ["Water spilling outside the bucket?", 0.04, "idle"], ["Pliers on the plastic?", 0.02, "idle"], ["Cracked or corroded parts?", 0.03, "idle"]],
+    log: [["live", "Answered “why?” from the knowledge pack"], ["insp", "Step 3 verified, no mistake firing"]], cam: "2 frames a second during the repair",
+    why: "The whole knowledge pack, from Hansgrohe and Prevex instructions and Finnish housing guidance, fits in Gemini Live's context, so no retrieval step can miss something. Cracked or corroded parts would trigger a hard stop and a pointer to a plumber or the housing company.",
     facts: [["Knowledge", "21 cited sources"]] },
 
-  { tab: "Step 4", path: "bottle_trap / 4 of 7", scene: "The wearer scrubs the cup with an old toothbrush and rinses it under the tap.",
-    card: "14-step-4-rinse", step: "4/7", short: "Empty and clean the cup", tip: "Old toothbrush. No scourer.", status: "✓ Done", tone: "insp",
-    talk: [["you", "Done."], ["coach", "Checking… yes, that's clean."]],
-    liveState: ["speaking", "tool call"], live: "Hears \"done\" and calls <code class=\"tool\">verify_now()</code>: the app sends three frames at once for a close check.",
-    inspWhat: "burst of 3 checks", inspState: ["ok", "verified"],
-    q: [["Cup rinsed or clean inside?", 0.86, "pass"]],
-    log: [["live", "Tool call: verify_now() → 3-frame burst"], ["insp", "✓ Step 4 verified"]], fps: "burst · 3 frames",
-    why: "The Google DeepMind team's advice was to verify at the moments that matter, not stream constantly. Saying \"done\" triggers an immediate close check, and Gemini Live gets only a frame every ~4 s plus one when you start talking.",
-    facts: [["Frames to Live", "60 → ~6–9 / min"]] },
+  { tab: "Step 4", where: "Step 4 of 7", frame: "clean", scene: "The wearer scrubs the cup with an old toothbrush and rinses it under the tap.",
+    card: "14-step-4-rinse", step: "4/7", short: "Empty and clean the cup", tip: "Old toothbrush, no scourer", status: ["insp", "check", "Done"],
+    talk: [["you", "Done."], ["coach", "Checking. Yes, that's clean."]],
+    live: ["c-live", "checking", "Hears “done” and calls <code class=\"call\">verify_now()</code>, so the app sends three frames at once for a close check."],
+    insp: ["c-insp", "verified", "Runs a burst of three checks."],
+    checks: [["Cup rinsed or clean inside?", 0.86, "pass"]],
+    log: [["live", "Called verify_now(), three frames sent at once"], ["insp", "Step 4 verified"]], cam: "a burst of 3 frames",
+    why: "The Google DeepMind team's advice was to verify at the moments that matter, not stream constantly. Saying “done” triggers an immediate close check, and Gemini Live gets only a frame every few seconds plus one when you start talking.",
+    facts: [["Frames to Live", "60 → about 6–9 a minute"]] },
 
-  { tab: "Not sure", key: true, path: "bottle_trap / 5 of 7", scene: "The wearer holds the cup at an angle. The rubber ring is hard to see.",
-    card: "05-look-down", step: "5/7", short: "Rubber ring flat in the groove", tip: "Cracked or flat? Replace it.", status: "? Show me another angle", tone: "warn",
+  { tab: "Not sure", key: true, where: "Step 5 of 7", frame: "ring", scene: "The wearer holds the cup at an angle. The rubber ring is hard to see.",
+    card: "05-look-down", step: "5/7", short: "Rubber ring flat in the groove", tip: "Cracked or flat? Replace it.", status: ["warn", "help", "Show me another angle"],
     talk: [["coach", "I can't quite see the ring. Can you hold the cup closer, with the inside facing you?"]],
-    liveState: ["warn", "taking over"], live: "Takes over when the inspector is unsure: looks at the image itself and asks one short question. It may not mark the step done.",
-    inspWhat: "unsure for 8 checks", inspState: ["warn", "55% · unsure"],
-    q: [["Rubber ring seated flat in the groove?", 0.55, "warn"], ["Ring missing or twisted?", 0.31, "idle"]],
-    log: [["warn", "Inspector unsure (55%) for 8 checks → hand over to Gemini Live"]], fps: "2 fps · procedure",
+    live: ["c-warn", "taking over", "Takes over when the inspector is unsure: looks at the image itself and asks one short question. It may not mark the step done."],
+    insp: ["c-warn", "unsure, 55%", "Stays between 25% and 75% for eight checks."],
+    checks: [["Rubber ring seated flat in the groove?", 0.55, "warn"], ["Ring missing or twisted?", 0.31, "idle"]],
+    log: [["warn", "Unsure for eight checks, handed over to Gemini Live"]], cam: "2 frames a second during the repair",
     why: "Fast, calibrated checks decide when they can. When they can't, they say so and hand over to the model that can reason, instead of guessing. The wearer stays in control and is told what to show.",
-    facts: [["Escalates after", "8 unsure checks"]] },
+    facts: [["Hands over after", "eight unsure checks"]] },
 
-  { tab: "Step 5", path: "bottle_trap / 5 of 7", scene: "The cup is held close. The rubber ring sits flat all the way round.",
-    card: "17-correct", step: "5/7", short: "Rubber ring flat in the groove", status: "✓ Done", tone: "insp",
+  { tab: "Step 5", where: "Step 5 of 7", frame: "ring", scene: "The cup is held close. The rubber ring sits flat all the way round.",
+    card: "17-correct", step: "5/7", short: "Rubber ring flat in the groove", status: ["insp", "check", "Done"],
     talk: [["coach", "That ring looks good. Screw the cup back on by hand. Start it straight."]],
-    liveState: ["speaking", "speaking"], live: "Gets the verified result and moves on.",
-    inspWhat: "verifying step 5", inspState: ["ok", "verified"],
-    q: [["Rubber ring seated flat in the groove?", 0.91, "pass"], ["Ring missing or twisted?", 0.05, "idle"]],
-    log: [["insp", "✓ Step 5 verified after the better view"]], fps: "2 fps · procedure",
+    live: ["c-live", "speaking", "Gets the verified result and moves on."],
+    insp: ["c-insp", "verified", "Verifies step 5."],
+    checks: [["Rubber ring seated flat in the groove?", 0.91, "pass"], ["Ring missing or twisted?", 0.05, "idle"]],
+    log: [["insp", "Step 5 verified after the better view"]], cam: "2 frames a second during the repair",
     why: "A twisted or missing ring is the most common reason a refitted trap leaks, so the inspector checks it explicitly before the cup goes back on.",
     facts: [] },
 
-  { tab: "Drop", key: true, path: "bottle_trap / 6 of 7 · reconnecting", scene: "Mid-step, the Wi-Fi drops for a few seconds.",
-    card: "27-offline", step: "6/7", short: "Your place is saved", status: "Reconnecting…", tone: "warn",
+  { tab: "Connection drop", key: true, where: "Step 6 of 7, reconnecting", frame: "refit", scene: "Mid-step, the Wi-Fi drops for a few seconds.",
+    card: "27-offline", step: "6/7", short: "Your place is saved", status: ["warn", "wifi", "Reconnecting"],
     talk: [["coach", "Sorry, I lost connection for a moment. I'm back. Let's carry on: screw the cup back on, hand-tight."]],
-    liveState: ["warn", "resumed"], live: "Resumes the same conversation with a session-resumption handle, then tells the wearer it's back.",
-    inspWhat: "paused while offline", inspState: ["warn", "paused"], q: [],
-    log: [["warn", "Connection lost · falling tone"], ["live", "Session resumed in ~4 s · still on step 6/7"]], fps: "resuming",
+    live: ["c-warn", "resumed", "Resumes the same conversation with a session-resumption handle, then tells the wearer it's back."],
+    insp: ["c-idle", "paused", "Pauses while the connection is down and picks up on the same step."], checks: [],
+    log: [["warn", "Connection lost, a falling tone plays"], ["live", "Session resumed in about 4 s, still on step 6"]], cam: "resuming",
     why: "On the glasses there's no screen to read, so connection changes are audible: a falling tone when lost, a rising tone when back, and the coach says so. The procedure lives on our server, so nothing is lost.",
-    facts: [["Survives", "drops · 10-min limit · 2-min video limit"]] },
+    facts: [["Survives", "network drops and session time limits"]] },
 
-  { tab: "Step 6", path: "bottle_trap / 6 of 7", scene: "The cup is screwed back on, sitting straight and level.",
-    card: null, step: "6/7", short: "Screw the cup on, by hand", tip: "Start it straight. Hand-tight.", status: "✓ Done", tone: "insp",
+  { tab: "Step 6", where: "Step 6 of 7", frame: "refit", scene: "The cup is screwed back on, sitting straight and level.",
+    card: null, step: "6/7", short: "Screw the cup on, by hand", tip: "Start it straight, hand-tight", status: ["insp", "check", "Done"],
     talk: [["coach", "Nice and straight. Now run the tap for a few seconds while I watch for drips."]],
-    liveState: ["speaking", "speaking"], live: "Gives the last step.",
-    inspWhat: "verifying step 6", inspState: ["ok", "verified"],
-    q: [["Cup back on, straight and level?", 0.89, "pass"], ["Cup tilted?", 0.06, "idle"], ["Pliers on the plastic?", 0.02, "idle"]],
-    log: [["insp", "✓ Step 6 verified"]], fps: "2 fps · procedure",
+    live: ["c-live", "speaking", "Gives the last step."],
+    insp: ["c-insp", "verified", "Verifies step 6."],
+    checks: [["Cup back on, straight and level?", 0.89, "pass"], ["Cup tilted?", 0.06, "idle"], ["Pliers on the plastic?", 0.02, "idle"]],
+    log: [["insp", "Step 6 verified"]], cam: "2 frames a second during the repair",
     why: "A crooked cup is a cross-threaded cup, and it will leak. Overtightening cracks plastic. Both are watched as mistakes on this step.",
     facts: [] },
 
-  { tab: "Done", path: "bottle_trap / complete", scene: "The tap runs. Water drains away freely and the cup stays dry.",
-    card: "23-drain-clear", step: "", short: "Drain clear", status: "✓ All done", tone: "insp",
+  { tab: "Done", where: "Step 7 of 7", frame: "drain", scene: "The tap runs. Water drains away freely and the cup stays dry.",
+    card: "23-drain-clear", step: "", short: "Drain clear", status: ["insp", "check", "All done"],
     talk: [["coach", "Water's draining and no drips. You fixed it!"]],
-    liveState: ["ok", "done"], live: "Congratulates in one sentence.",
-    inspWhat: "final check", inspState: ["ok", "complete"],
-    q: [["Water running and draining?", 0.9, "pass"], ["Drip at the trap?", 0.05, "idle"], ["Water still standing in the basin?", 0.04, "idle"]],
-    log: [["insp", "✓ Procedure complete · 7 of 7 steps verified on camera"]], fps: "0.5 fps · idle",
+    live: ["c-insp", "done", "Congratulates in one sentence."],
+    insp: ["c-insp", "complete", "Runs the final check."],
+    checks: [["Water running and draining?", 0.9, "pass"], ["Drip at the trap?", 0.05, "idle"], ["Water still standing in the basin?", 0.04, "idle"]],
+    log: [["insp", "Repair complete, all 7 steps verified on camera"]], cam: "0.5 frames a second while idle",
     why: "If the water still didn't drain, the blockage would be further down the pipe. The coach would say to stop and call the housing company or a plumber, and not to push anything into the pipe.",
-    facts: [["Hard stop", "still blocked → call a pro"]] },
+    facts: [["Hard stop", "still blocked, call a professional"]] },
 
-  { tab: "How it works", summary: true, path: "architecture" },
+  { tab: "How it works", summary: true },
 ];
 
 const $ = (id) => document.getElementById(id);
-const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const icon = (name) => `<svg class="ico" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const LOG_ICON = { insp: "check", live: "code", danger: "alert", warn: "help" };
 let i = 0, timer = null;
 
-function buildTrack() {
-  $("track").replaceChildren(...S.map((s, k) => {
-    const b = el("button", "seg" + (s.key ? " key" : ""));
-    b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-label", `${k + 1}. ${s.tab}`);
-    b.append(el("span", "bar"), el("span", "lbl", s.tab));
-    b.onclick = () => { stop(); go(k); };
-    return b;
-  }));
-}
-function paintTrack() {
-  [...$("track").children].forEach((b, k) => {
-    b.classList.toggle("on", k === i); b.classList.toggle("done", k < i);
-    b.setAttribute("aria-selected", k === i ? "true" : "false");
-  });
+function buildSegs() {
+  $("segs").innerHTML = S.map((s, k) => `<button type="button" data-k="${k}">${s.key ? '<i class="mark" aria-hidden="true"></i>' : ""}${esc(s.tab)}</button>`).join("");
+  $("segs").querySelectorAll("button").forEach((b) => (b.onclick = () => { stop(); go(+b.dataset.k); }));
 }
 
-function treeSVG(nodes) {
-  const w = 160, gap = 50, h = 52, W = nodes.length * w + (nodes.length - 1) * gap;
-  let s = `<svg viewBox="0 0 ${W} ${h + 4}" role="img" aria-label="Decision tree: ${nodes.map((n) => n[1]).join(", then ")}">`;
+function flow(nodes) {
+  const w = 168, gap = 46, h = 54, W = nodes.length * w + (nodes.length - 1) * gap;
+  let s = `<svg viewBox="0 0 ${W} ${h + 4}" role="img" aria-label="Decision tree: ${esc(nodes.map((n) => n[1]).join(", then "))}">`;
   nodes.forEach(([k, v], n) => {
-    const x = n * (w + gap);
-    if (n > 0) {
-      const x0 = x - gap, y = 2 + h / 2;
-      s += `<path class="ln" d="M${x0} ${y} H${x}"/><path class="pulse" style="animation-delay:${n * 0.25}s" d="M${x0} ${y} H${x}"/>`;
-    }
-    s += `<g class="nd"><rect x="${x + 1}" y="2" width="${w - 2}" height="${h}" rx="10"/><text class="k" x="${x + 12}" y="22">${k}</text><text class="v" x="${x + 12}" y="42">${v}</text></g>`;
+    const x = n * (w + gap), y = 2 + h / 2;
+    if (n) s += `<path class="w" d="M${x - gap} ${y}H${x}"/><path class="p" style="animation-delay:${n * 0.3}s" d="M${x - gap} ${y}H${x}"/>`;
+    s += `<rect class="n" x="${x + 0.5}" y="2.5" width="${w - 1}" height="${h - 1}" rx="12"/><text class="k" x="${x + 14}" y="23">${esc(k)}</text><text class="v" x="${x + 14}" y="43">${esc(v)}</text>`;
   });
   return s + "</svg>";
 }
 
-function render() {
-  const s = S[i];
-  $("path").innerHTML = `handyman / <b>${s.path}</b>`;
-  $("counter").textContent = `${String(i + 1).padStart(2, "0")} / ${S.length} · ${s.tab}`;
-  $("stage").hidden = !!s.summary;
-  $("summary").hidden = !s.summary;
-  $("fps").textContent = s.summary ? "overview" : `camera · ${s.fps}`;
-  if (s.summary) renderSummary(); else renderStage(s);
-  $("prev").disabled = i === 0;
-  $("next").disabled = i === S.length - 1;
-  paintTrack();
-}
-
-function renderStage(s) {
-  // wearer
-  $("scene").textContent = s.scene;
-  $("g-step").textContent = s.step ? `STEP ${s.step}` : "";
-  const img = $("g-img");
-  if (s.card) { img.src = C(s.card); img.hidden = false; $("g-noimg").hidden = true; } else { img.hidden = true; $("g-noimg").hidden = false; }
-  $("g-short").textContent = s.short || "";
-  $("g-tip").textContent = s.tip || "";
-  $("g-status").textContent = s.status || "";
-  $("g-status").style.color = `var(--${{ insp: "insp", danger: "danger", warn: "warn", live: "live" }[s.tone] || "fg"})`;
-  const feed = $("feed");
-  feed.classList.toggle("alarm", !!s.alarm);
-  feed.querySelector(".alert")?.remove();
-  if (s.alarm) feed.append(el("div", "alert", s.alarm));
-  $("talk").replaceChildren(...s.talk.map(([kind, t], n) => {
-    const m = el("div", "msg " + kind); m.style.animationDelay = `${n * 160}ms`;
-    const coach = kind.startsWith("coach");
-    m.append(el("span", "av", coach ? "AI" : "YOU"));
-    const body = el("div");
-    body.append(el("div", "who", coach ? "COACH · GEMINI LIVE" : "YOU"), el("div", "txt", t));
-    m.append(body);
-    return m;
-  }));
-  // live
-  const ls = $("live-state");
-  ls.className = "pill state " + s.liveState[0];
-  ls.innerHTML = s.liveState[0] === "speaking" ? `<span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span> ${s.liveState[1]}` : s.liveState[1];
-  $("live").innerHTML = s.live;
-  // inspector
-  $("insp-what").textContent = s.inspWhat;
-  const is = $("insp-state");
-  is.className = "pill state " + s.inspState[0]; is.textContent = s.inspState[1]; is.hidden = !s.inspState[1];
-  const tree = $("tree");
-  tree.hidden = !s.tree; if (s.tree) tree.innerHTML = treeSVG(s.tree);
-  const qs = $("qs");
-  if (!s.q.length) qs.replaceChildren(el("p", "empty", s.inspWhat === "idle" ? "Starts when a diagnosis or a procedure runs." : "Paused while the connection is down; picks up on the same step."));
-  else qs.replaceChildren(...s.q.map(([label, p, st]) => {
-    const q = el("div", "q " + st);
-    const v = el("span", "val");
-    v.append(el("em", null, { pass: "PASS", fail: "MISTAKE", warn: "UNSURE", idle: "" }[st]), Math.round(p * 100) + "%");
-    const m = el("div", "meter"); const fill = el("i"); m.append(fill);
-    q.append(el("span", "label", label), v, m);
-    requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = p * 100 + "%")));
-    return q;
-  }));
-  $("thresh").hidden = !s.q.length;
-  // event log: everything up to this moment, newest last
+function stageHTML(s) {
+  const st = s.status;
+  const talk = s.talk.map(([k, t], n) => {
+    const coach = k.startsWith("coach");
+    return `<div class="msg ${k}" style="animation-delay:${n * 140}ms"><small>${coach ? "Coach" : "You"}</small>${esc(t)}</div>`;
+  }).join("");
+  const checks = s.checks.length
+    ? `<div class="checks">${s.checks.map(([q, p, state]) => `
+        <div class="check ${state}"><span class="q">${esc(q)}</span>
+          <span class="pct">${{ pass: "<em>Pass</em>", fail: "<em>Mistake</em>", warn: "<em>Unsure</em>", idle: "" }[state]}${Math.round(p * 100)}%</span>
+          <span class="track"><i data-w="${p * 100}"></i></span></div>`).join("")}
+        </div><p class="note">The line on each bar is the 75% threshold. A step passes after three confident checks in a row.</p>`
+    : "";
   const entries = [];
-  S.slice(0, i + 1).forEach((st, k) => (st.log || []).forEach((e) => entries.push([k, ...e])));
+  S.slice(0, i + 1).forEach((x, k) => (x.log || []).forEach((e) => entries.push([k, ...e])));
   let t = 0;
-  $("log").replaceChildren(...entries.map(([k, kind, text], n) => {
+  const log = entries.map(([k, kind, text], n) => {
     t += 4 + (n % 3) * 3;
-    const li = el("li", kind + (k === i ? " now" : ""));
-    li.append(el("span", "t", `00:${String(t).padStart(2, "0")}`), el("i"), el("span", null, text));
-    return li;
-  }));
-  requestAnimationFrame(() => { const lg = $("log"); lg.scrollTop = lg.scrollHeight; });
-  // why
-  $("why").textContent = s.why;
-  $("facts").replaceChildren(...(s.facts || []).map(([k, v]) => { const f = el("span", "fact", k + ": "); f.append(el("b", null, v)); return f; }));
-}
-
-function renderSummary() {
-  const box = (x, y, w, h, t1, t2) => `<rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="14"/><text class="t1" x="${x + 18}" y="${y + 32}">${t1}</text><text class="t2" x="${x + 18}" y="${y + 54}">${t2}</text>`;
-  $("summary").innerHTML = `
-    <div class="sum">
-      <div style="display:grid;gap:8px">
-        <span class="mono">How it fits together</span>
-        <h2>Two Gemini models, one job each</h2>
-        <p class="lead">Gemini Live talks, listens and reasons. The Decisions API checks every step on camera with a calibrated confidence. A step counts only when the inspector confirms it, and when it isn't sure it hands over to Gemini Live. The expertise is stored as data: every step has a done check, mistake checks and safety gates, built from cited manufacturer instructions.</p>
+    if (n < entries.length - 5) return ""; // show the latest five
+    return `<li class="k-${kind}${k === i ? " now" : ""}"><span class="t">0:${String(t).padStart(2, "0")}</span>${icon(LOG_ICON[kind])}<span>${esc(text)}</span></li>`;
+  }).join("");
+  const liveChip = s.live[1] === "speaking" || s.live[1] === "listening" || s.live[1] === "answering"
+    ? `<span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>` : "";
+  return `
+    <div class="side fade">
+      <div class="side-h"><h2>What the wearer sees</h2><span class="where">${esc(s.where)}</span></div>
+      <div class="view${s.alarm ? " alarm" : ""}" id="view">
+        <img class="frame" id="frame" alt="${esc(s.scene)}" src="frames/${s.frame}.jpg" hidden>
+        <div class="scenecard"><p>${esc(s.scene)}</p></div>
+        <p class="caption">${esc(s.scene)}</p>
+        <span class="rec"><i></i>Glasses camera</span>
+        <div class="hud" aria-label="The glasses display">
+          <div class="top"><span>Display</span><b>${s.step ? "Step " + esc(s.step) : ""}</b></div>
+          ${s.card ? `<img src="cards/${s.card}.svg" alt="">` : `<div class="noimg">${icon("cup")}</div>`}
+          <div class="short">${esc(s.short)}</div>
+          <div class="tip">${esc(s.tip || "")}</div>
+          <div class="status t-${st[0]}">${icon(st[1])}${esc(st[2])}</div>
+        </div>
+        ${s.alarm ? `<div class="toast" role="alert">${icon("alert")}${esc(s.alarm)}</div>` : ""}
       </div>
-      <div class="arch"><svg viewBox="0 0 1000 230" role="img" aria-label="Glasses to Android app to server, which uses Gemini Live and the Gemini Decisions API">
-        <path class="wire" d="M190 100 H250"/><path class="flowl" stroke="#e5e7eb" d="M190 100 H250"/>
-        <path class="wire" d="M440 100 H500"/><path class="flowl" stroke="#e5e7eb" style="animation-delay:.4s" d="M440 100 H500"/>
-        <path class="wire" d="M700 100 C735 100 735 50 770 50"/><path class="flowl" stroke="#4d84ff" style="animation-delay:.8s" d="M700 100 C735 100 735 50 770 50"/>
-        <path class="wire" d="M700 100 C735 100 735 160 770 160"/><path class="flowl" stroke="#34d399" style="animation-delay:1s" d="M700 100 C735 100 735 160 770 160"/>
-        ${box(10, 62, 180, 76, "Meta glasses", "CAMERA · DISPLAY · AUDIO")}
-        ${box(250, 62, 190, 76, "Android app", "META DEVICE ACCESS TOOLKIT")}
-        ${box(500, 62, 200, 76, "Server · the brain", "PROCEDURES · STEP RUNNER")}
-        <rect class="box" x="770" y="14" width="220" height="72" rx="14" style="stroke:rgba(77,132,255,.55)"/><text class="t1" x="788" y="44">Gemini Live</text><text class="t2" x="788" y="66" style="fill:#4d84ff">THE VOICE</text>
-        <rect class="box" x="770" y="124" width="220" height="72" rx="14" style="stroke:rgba(52,211,153,.55)"/><text class="t1" x="788" y="154">Decisions API</text><text class="t2" x="788" y="176" style="fill:#34d399">THE INSPECTOR</text>
-      </svg></div>
-      <div class="nums">
-        <div class="num"><b>0.3 s</b><span>per camera check</span></div>
-        <div class="num"><b>~1.5 s</b><span>from doing a step to ✓ verified</span></div>
-        <div class="num"><b>16</b><span>questions in one call</span></div>
-        <div class="num"><b>89% → 100%</b><span>after tuning (19 labelled frames)</span></div>
-        <div class="num"><b>60 → 6</b><span>frames/min to the expensive model</span></div>
-        <div class="num"><b>21</b><span>sources behind the steps</span></div>
-        <div class="num"><b>€0.40</b><span>per hour of camera checks</span></div>
+      <div class="talk">${talk}</div>
+    </div>
+    <div class="side fade" style="animation-delay:90ms">
+      <div class="side-h"><h2>What happens inside</h2><span class="where">Camera: ${esc(s.cam)}</span></div>
+      <div>
+        <div class="block">
+          <div class="bh"><i class="sw" style="background:var(--live)"></i><h3>Gemini Live</h3><span class="role">the voice</span><span class="chip ${s.live[0]}">${liveChip}${esc(s.live[1])}</span></div>
+          <p class="does">${s.live[2]}</p>
+        </div>
+        <div class="block">
+          <div class="bh"><i class="sw" style="background:var(--insp)"></i><h3>Gemini Decisions API</h3><span class="role">the inspector</span><span class="chip ${s.insp[0]}">${esc(s.insp[1])}</span></div>
+          <p class="does">${esc(s.insp[2])}</p>
+          ${s.tree ? `<div class="flow">${flow(s.tree)}</div>` : ""}
+          ${checks}
+        </div>
+        <div class="block">
+          <div class="bh"><h3>Server log</h3><span class="role">what our server did, so far</span></div>
+          <ol class="log" id="log">${log}</ol>
+        </div>
       </div>
-      <p class="lead">On real glasses we learned that their microphone forces Bluetooth call mode, which hides the display, so the wearer's voice goes through the phone mic while the coach plays through the glasses. Procedures are AI-drafted from sources and still need expert review; handling glasses events (taken off, battery) is next.</p>
-      <div class="cta">
-        <a class="btn primary" href="https://github.com/codegeekluka/junction2026" target="_blank" rel="noopener">View the source code →</a>
-        <button type="button" class="btn" id="restart">↺ Watch again</button>
+      <div class="why">
+        <h3>Why it works this way</h3>
+        <p>${esc(s.why)}</p>
+        ${s.facts.length ? `<div class="facts">${s.facts.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join("")}</div>` : ""}
       </div>
     </div>`;
-  $("restart").onclick = () => go(0);
+}
+
+function summaryHTML() {
+  const box = (x, y, w, h, t, s, stroke) => `<rect class="b" x="${x}" y="${y}" width="${w}" height="${h}" rx="16"${stroke ? ` style="stroke:${stroke}"` : ""}/><text class="h" x="${x + 20}" y="${y + 34}">${t}</text><text class="s" x="${x + 20}" y="${y + 56}">${s}</text>`;
+  return `
+    <div class="sum fade">
+      <h2>Two Gemini models, one job each.</h2>
+      <p class="lead">Gemini Live talks, listens and reasons. The Decisions API checks every step on camera with a calibrated confidence. A step counts only when the inspector confirms it, and when it isn't sure it hands over to Gemini Live. The expertise is stored as data: every step has a done check, mistake checks and safety gates, built from cited manufacturer instructions.</p>
+      <div class="arch"><svg viewBox="0 0 1000 236" role="img" aria-label="Meta glasses connect to the Android app, which connects to our server, which uses Gemini Live and the Gemini Decisions API">
+        <path class="w" d="M196 118H252"/><path class="p" stroke="#1d1d1f" d="M196 118H252"/>
+        <path class="w" d="M452 118H508"/><path class="p" stroke="#1d1d1f" style="animation-delay:.5s" d="M452 118H508"/>
+        <path class="w" d="M716 118C744 118 744 58 772 58"/><path class="p" stroke="#0a64e8" style="animation-delay:1s" d="M716 118C744 118 744 58 772 58"/>
+        <path class="w" d="M716 118C744 118 744 178 772 178"/><path class="p" stroke="#12895a" style="animation-delay:1.2s" d="M716 118C744 118 744 178 772 178"/>
+        ${box(8, 78, 188, 80, "Meta glasses", "Camera, display, audio")}
+        ${box(252, 78, 200, 80, "Android app", "Meta Device Access Toolkit")}
+        ${box(508, 78, 208, 80, "Our server", "Procedures and step checks")}
+        ${box(772, 20, 220, 76, "Gemini Live", "The voice", "rgba(10,100,232,.45)")}
+        ${box(772, 140, 220, 76, "Decisions API", "The inspector", "rgba(18,137,90,.45)")}
+      </svg></div>
+      <dl class="spec">
+        <div><dt>Time per camera check</dt><dd>0.3 s</dd></div>
+        <div><dt>From doing a step to verified</dt><dd>about 1.5 s</dd></div>
+        <div><dt>Questions in one call</dt><dd>16</dd></div>
+        <div><dt>Accuracy after tuning, 19 labelled frames</dt><dd>89% → 100%</dd></div>
+        <div><dt>Frames a minute to the expensive model</dt><dd>60 → 6</dd></div>
+        <div><dt>Sources behind the steps</dt><dd>21</dd></div>
+        <div><dt>Cost of camera checks</dt><dd>€0.40 an hour</dd></div>
+        <div><dt>Steps in the demo repair</dt><dd>7</dd></div>
+      </dl>
+      <p class="lead">On real glasses we learned that their microphone forces Bluetooth call mode, which hides the display, so the wearer's voice goes through the phone mic while the coach plays through the glasses. Procedures are drafted from cited sources and still need expert review; handling glasses events such as taking them off is next.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://github.com/codegeekluka/junction2026" target="_blank" rel="noopener">View the source code${icon("right")}</a>
+        <button type="button" class="btn" id="restart">${icon("restart")}Watch again</button>
+      </div>
+    </div>`;
+}
+
+function render() {
+  const s = S[i];
+  const stage = $("stage");
+  stage.innerHTML = s.summary ? summaryHTML() : stageHTML(s);
+  if (s.summary) $("restart").onclick = () => go(0);
+  else {
+    const img = $("frame"), view = $("view");
+    img.onload = () => { img.hidden = false; view.classList.add("has-frame"); };
+    img.onerror = () => img.remove();
+    requestAnimationFrame(() => requestAnimationFrame(() => stage.querySelectorAll(".track i").forEach((b) => (b.style.width = b.dataset.w + "%"))));
+  }
+  $("segs").querySelectorAll("button").forEach((b, k) => { if (k === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+  $("segs").querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  $("ruler").style.width = `${((i + 1) / S.length) * 100}%`;
+  $("count").textContent = `${i + 1} of ${S.length}`;
+  $("prev").disabled = i === 0;
+  $("next").disabled = i === S.length - 1;
 }
 
 function go(k) { i = Math.max(0, Math.min(S.length - 1, k)); render(); }
-function stop() { clearInterval(timer); timer = null; $("play").textContent = "▶ Play"; $("play").setAttribute("aria-pressed", "false"); }
+function stop() { clearInterval(timer); timer = null; $("play").innerHTML = `${icon("play")}<span>Play</span>`; $("play").setAttribute("aria-pressed", "false"); }
 $("prev").onclick = () => { stop(); go(i - 1); };
 $("next").onclick = () => { stop(); go(i + 1); };
 $("play").onclick = () => {
   if (timer) return stop();
   if (i === S.length - 1) go(0);
-  $("play").textContent = "❚❚ Pause"; $("play").setAttribute("aria-pressed", "true");
-  timer = setInterval(() => { if (i >= S.length - 1) return stop(); go(i + 1); }, 7000);
+  $("play").innerHTML = `${icon("pause")}<span>Pause</span>`; $("play").setAttribute("aria-pressed", "true");
+  timer = setInterval(() => { if (i >= S.length - 1) return stop(); go(i + 1); }, 7500);
 };
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, textarea")) return;
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.key === "ArrowRight") { stop(); go(i + 1); }
   if (e.key === "ArrowLeft") { stop(); go(i - 1); }
 });
-buildTrack();
+buildSegs();
 render();
 </script>
