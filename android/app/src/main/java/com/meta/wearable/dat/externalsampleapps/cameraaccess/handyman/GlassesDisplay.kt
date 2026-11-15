@@ -26,6 +26,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -133,6 +134,9 @@ class GlassesDisplay(
                 Card(s.link, hasTask, s.hud, pickCard(s, hasTask))
               }
               .distinctUntilChanged()
+              // Each card goes to the glasses over Bluetooth and can take a moment; if newer ones
+              // arrive meanwhile, skip straight to the latest so the display never lags behind.
+              .conflate()
               .collect { card ->
                 target.sendContent { cardContent(card) }.onFailure { error, _ ->
                   Log.w(TAG, "sendContent failed: ${error.description}")

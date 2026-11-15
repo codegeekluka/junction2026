@@ -4,10 +4,14 @@
 //   server "audio" (24 kHz 16-bit mono PCM)  → glasses speakers
 //   server "interrupted" (user talked over the coach) → drop queued speech immediately
 //
-// Routing: if the glasses are connected as a Bluetooth headset (SCO), mic and speaker go through
-// them; otherwise (Mock Device Kit, no glasses) we fall back to the phone's mic and speaker, so
-// the whole loop can be tested on the phone alone. VOICE_COMMUNICATION turns on the phone's echo
-// cancellation, so the coach doesn't hear itself.
+// Routing (Sat night, after testing on real glasses):
+//  MEDIA (default when the glasses are connected as Bluetooth media/A2DP): the user's voice is
+//    recorded with the PHONE mic (good quality), the coach plays through the GLASSES as media audio.
+//    No "call mode": no phone-call screen, no narrowband headset audio. Keep the phone near you.
+//  GLASSES (USE_CALL_MODE = true): glasses mic + speakers as a Bluetooth headset (HFP/SCO). Android
+//    treats it as a call (call screen, low-quality audio). Proper glasses-mic audio needs Meta's
+//    in-stream audio (beta), a later step.
+//  PHONE (no glasses): phone mic + loudspeaker with echo cancellation, for testing alone.
 //
 // Written without a build machine (Sat evening). Expect to fix small compile issues.
 
@@ -33,7 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class VoiceRoute { OFF, GLASSES, PHONE }
+enum class VoiceRoute { OFF, MEDIA, GLASSES, PHONE }
 
 class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
   companion object {
@@ -41,6 +45,8 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
     private const val MIC_RATE = 16_000 // docs/protocol.md: audio in = 16 kHz
     private const val SPEAKER_RATE = 24_000 // audio out = 24 kHz
     private const val CHUNK_SAMPLES = 1_600 // 100 ms at 16 kHz
+    /** true = old headset/call mode through the glasses mic (call screen, low quality). */
+    var USE_CALL_MODE = false
   }
 
   private val context = context.applicationContext
@@ -69,13 +75,16 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
       Log.w(TAG, "No RECORD_AUDIO permission")
       return false
     }
-    _route.value = routeToGlasses()
+    _route.value = pickRoute()
+    val media = _route.value == VoiceRoute.MEDIA
 
     val minIn =
         AudioRecord.getMinBufferSize(MIC_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
     val rec =
         AudioRecord(
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION, // echo cancellation + noise suppression
+            // MEDIA: plain speech-recognition capture from the phone mic (clean, no call mode).
+            // Otherwise VOICE_COMMUNICATION = echo cancellation + noise suppression.
+            if (media) MediaRecorder.AudioSource.VOICE_RECOGNITION else MediaRecorder.AudioSource.VOICE_COMMUNICATION,
             MIC_RATE,
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,
@@ -88,6 +97,20 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
       return false
     }
     record = rec
+    // MEDIA: force the phone's own microphone. Otherwise Android (seen on OnePlus) prefers the
+    // connected glasses as a Bluetooth headset mic, which only works in call mode (SCO) → silence.
+    if (media) {
+      val builtIn =
+          (context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager)
+              .getDevices(android.media.AudioManager.GET_DEVICES_INPUTS)
+              .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+      val ok = builtIn != null && rec.setPreferredDevice(builtIn)
+      Log.i(TAG, "mic: phone built-in mic ${if (ok) "selected" else "NOT found / not set"}")
+    }
+    // Best effort: the phone mic may still pick up the coach from the glasses' open speakers.
+    if (media && android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
+      runCatching { android.media.audiofx.AcousticEchoCanceler.create(rec.audioSessionId)?.enabled = true }
+    }
 
     val minOut =
         AudioTrack.getMinBufferSize(SPEAKER_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
@@ -95,7 +118,7 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
         AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setUsage(if (media) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build())
             .setAudioFormat(
@@ -174,6 +197,22 @@ class VoiceLink(context: Context, private val sendAudio: (String) -> Unit) {
       if (flushRequested) continue // interrupted while we waited: drop this chunk
       trk.write(chunk, 0, chunk.size) // blocks while the buffer is full = natural pacing
     }
+  }
+
+  /**
+   * MEDIA always (default), unless USE_CALL_MODE: never put the glasses into call mode, because
+   * during a "call" the glasses show the call screen instead of our display. Media audio goes to
+   * the glasses if they're connected for media (A2DP), otherwise to the phone's speaker.
+   */
+  private fun pickRoute(): VoiceRoute {
+    val outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+    Log.i(TAG, "audio outputs: " + outputs.joinToString { "${it.productName}(type ${it.type})" })
+    if (USE_CALL_MODE) return routeToGlasses()
+    runCatching { audioManager.clearCommunicationDevice() } // drop any leftover call routing
+    audioManager.mode = AudioManager.MODE_NORMAL
+    val a2dp = outputs.any { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+    Log.i(TAG, if (a2dp) "media audio → glasses (A2DP)" else "no Bluetooth media device: coach plays on the phone speaker")
+    return VoiceRoute.MEDIA
   }
 
   /** Use the glasses as a Bluetooth headset if they're there; otherwise the phone. */
