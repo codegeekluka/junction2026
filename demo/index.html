@@ -84,7 +84,7 @@ h1, h2 { text-wrap: balance; }
 
 /* the glasses view */
 .view { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; background: #e9eaee; }
-.view img.frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.view .frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .scenecard { position: absolute; inset: 0; display: grid; align-content: end; padding: 22px; padding-right: 46%;
   background: radial-gradient(120% 90% at 0% 100%, #dfe3ea 0%, #eceef2 55%, #f4f5f7 100%); }
 .scenecard p { font: 600 clamp(17px, 1.7vw, 22px)/1.3 var(--display); letter-spacing: -0.015em; color: var(--ink); }
@@ -117,6 +117,7 @@ h1, h2 { text-wrap: balance; }
   .view { aspect-ratio: auto; display: grid; }
   .view img.frame, .scenecard { position: relative; inset: auto; }
   .view img.frame { aspect-ratio: 4 / 3; height: auto; }
+  .view video.frame { inset: 0 auto auto 0; aspect-ratio: 4 / 3; height: auto; }
   .scenecard { padding: 54px 18px 18px; }
   .hud { position: relative; top: auto; right: auto; width: auto; margin: 12px; }
   .toast { font-size: 17px; }
@@ -407,6 +408,9 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const icon = (name) => `<svg class="ico" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const LOG_ICON = { insp: "check", live: "code", danger: "alert", warn: "help" };
 let i = 0, timer = null;
+// Short muted loops from the same glasses footage (loops/), shown over the still once they play.
+const LOOPS = new Set(["sink", "reach", "bucket", "unscrew", "ring", "clean", "refit", "drain"]);
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function buildSegs() {
   $("segs").innerHTML = S.map((s, k) => `<button type="button" data-k="${k}">${s.key ? '<i class="mark" aria-hidden="true"></i>' : ""}${esc(s.tab)}</button>`).join("");
@@ -452,6 +456,7 @@ function stageHTML(s) {
       <div class="side-h"><h2>What the wearer sees</h2><span class="where">${esc(s.where)}</span></div>
       <div class="view${s.alarm ? " alarm" : ""}" id="view">
         <img class="frame" id="frame" alt="${esc(s.scene)}" src="frames/${s.frame}.jpg" hidden>
+        ${LOOPS.has(s.frame) && !calm ? `<video class="frame" id="loop" src="loops/${s.frame}.mp4" muted loop playsinline autoplay preload="auto" aria-hidden="true" hidden></video>` : ""}
         <div class="scenecard"><p>${esc(s.scene)}</p></div>
         <span class="rec"><i></i>Glasses camera</span>
         <div class="hud" aria-label="The glasses display">
@@ -536,6 +541,13 @@ function render() {
     const img = $("frame"), view = $("view");
     img.onload = () => { img.hidden = false; view.classList.add("has-frame"); $("caption").hidden = false; };
     img.onerror = () => img.remove();
+    const loop = $("loop");
+    if (loop) {
+      loop.muted = true;
+      loop.addEventListener("playing", () => { loop.hidden = false; }, { once: true });
+      loop.onerror = () => loop.remove();
+      loop.play?.().catch(() => loop.remove());
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => stage.querySelectorAll(".track i").forEach((b) => (b.style.width = b.dataset.w + "%"))));
   }
   $("segs").querySelectorAll("button").forEach((b, k) => { if (k === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
