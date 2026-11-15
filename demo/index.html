@@ -1,0 +1,476 @@
+<title>Handyman Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two panes side by side — "on the glasses" (left) and "inside the brain" (right) — over a step scrubber.
+   Single dark look on purpose: it mirrors the glasses display (black = see-through) and the demo video. */
+:root {
+  --bg: #07080c;
+  --panel: #0f1117;
+  --line: #22252e;
+  --fg: #f2f3f5;
+  --muted: #8b8f9a;
+  --live: #4d84ff;      /* Gemini Live = the voice */
+  --insp: #34d399;      /* Gemini Decisions API = the inspector */
+  --meta: #e5e7eb;      /* Meta Device Access Toolkit */
+  --danger: #ff5a5a;
+  --warn: #ffb020;
+  --cyan: #00d4ff;      /* designers' focus colour on the glasses */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 40px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.mono { font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-size: 11.5px; color: var(--muted); }
+
+/* header */
+header { display: grid; gap: 10px; }
+header h1 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 800; letter-spacing: -0.02em; }
+.punch { font-size: clamp(16px, 1.6vw, 19px); color: var(--fg); opacity: 0.92; max-width: 70ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel); font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.note { font-size: 13px; color: var(--muted); max-width: 90ch; }
+
+/* stepper */
+.stepper { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.stepper button { flex: none; font: 500 12.5px var(--font); color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 999px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+.stepper button[aria-current="step"] { color: #05060a; background: var(--fg); border-color: var(--fg); }
+.stepper button:focus-visible, .nav button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* panes */
+.panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 18px; }
+@media (max-width: 880px) { .panes { grid-template-columns: minmax(0, 1fr); } }
+.pane { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.pane-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pane-head h2 { font-size: 17px; font-weight: 700; }
+
+/* glasses view */
+.view { position: relative; border-radius: 14px; background: radial-gradient(ellipse at 40% 55%, #262a33 0%, #14161c 60%, #0b0c10 100%);
+  min-height: 300px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; overflow: hidden; }
+@media (max-width: 520px) { .view { grid-template-columns: minmax(0, 1fr); } }
+.camera { display: grid; gap: 8px; min-width: 0; }
+.camera .scene { font-size: 15px; color: #c9ccd4; }
+.rec { display: inline-flex; align-items: center; gap: 6px; }
+.rec .dot { background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; }
+.display { width: 236px; max-width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.16); border-radius: 18px; padding: 12px;
+  display: grid; gap: 4px; justify-items: center; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
+.display .step { font-family: var(--mono); font-size: 12px; color: var(--cyan); justify-self: start; min-height: 16px; }
+.display img { width: 150px; height: 150px; }
+.display .noimg { width: 150px; height: 150px; display: grid; place-items: center; color: var(--muted); font-size: 12px; border: 1px dashed #333; border-radius: 12px; }
+.display .short { font-weight: 700; font-size: 16px; line-height: 1.25; }
+.display .tip { font-size: 12.5px; color: var(--warn); min-height: 16px; }
+.display .status { font-weight: 600; font-size: 13.5px; }
+.flash { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 70px rgba(255, 90, 90, 0.55); border-radius: 14px; }
+
+.talk { display: grid; gap: 8px; }
+.bubble { padding: 10px 13px; border-radius: 12px; background: #161922; max-width: 92%; }
+.bubble .who { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; display: block; margin-bottom: 2px; }
+.bubble.you { justify-self: end; background: #1b1e27; }
+.bubble.you .who { color: var(--muted); }
+.bubble.coach { border-left: 3px solid var(--live); }
+.bubble.coach .who { color: var(--live); }
+.bubble.urgent { border-left-color: var(--danger); background: #2a1416; }
+
+/* brain */
+.lane { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+.lane-title { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; }
+.lane-title .what { font-family: var(--font); letter-spacing: 0; color: var(--muted); font-size: 13px; }
+.lane.live { border-color: rgba(77, 132, 255, 0.35); }
+.lane.insp { border-color: rgba(52, 211, 153, 0.35); }
+.lane .action { font-size: 14.5px; }
+.qs { display: grid; gap: 9px; }
+.q { display: grid; grid-template-columns: minmax(0, 1fr) 56px; gap: 4px 10px; align-items: center; }
+.q .label { font-size: 13.5px; min-width: 0; }
+.q .val { font-family: var(--mono); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.bar { grid-column: 1 / -1; position: relative; height: 8px; border-radius: 4px; background: #1f222b; overflow: visible; }
+.bar > i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; transition: width 380ms cubic-bezier(.2,.9,.1,1); }
+.bar::after { content: ""; position: absolute; left: 75%; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,0.35); }
+.q.pass .val { color: var(--insp); } .q.pass .bar > i { background: var(--insp); }
+.q.fail .val { color: var(--danger); } .q.fail .bar > i { background: var(--danger); }
+.q.warn .val { color: var(--warn); } .q.warn .bar > i { background: var(--warn); }
+.q.idle .val { color: var(--muted); } .q.idle .bar > i { background: #4a4e59; }
+.legend { font-size: 12px; color: var(--muted); }
+
+.tree { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.node { padding: 8px 11px; border-radius: 10px; border: 1.5px solid var(--insp); background: rgba(52,211,153,0.07); font-size: 13.5px; }
+.node small { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; color: var(--muted); }
+.arrow { color: var(--insp); font-size: 18px; }
+
+.event { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; font-weight: 600; font-size: 13.5px; justify-self: start; }
+.event.danger { background: rgba(255,90,90,0.14); color: var(--danger); border: 1px solid rgba(255,90,90,0.4); }
+.event.live { background: rgba(77,132,255,0.12); color: #8fb0ff; border: 1px solid rgba(77,132,255,0.4); }
+.event.insp { background: rgba(52,211,153,0.12); color: var(--insp); border: 1px solid rgba(52,211,153,0.4); }
+.event.warn { background: rgba(255,176,32,0.12); color: var(--warn); border: 1px solid rgba(255,176,32,0.4); }
+
+.why { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; }
+.why p { font-size: 14px; color: #d4d6dc; max-width: 70ch; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 14px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.meta-row b { color: var(--fg); font-weight: 500; }
+
+/* nav */
+.nav { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.nav .btns { display: flex; gap: 8px; }
+.nav button { font: 600 14px var(--font); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.nav button.primary { background: var(--fg); color: #05060a; border-color: var(--fg); }
+.nav button:disabled { opacity: 0.4; cursor: default; }
+.progress { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+/* summary stage */
+.summary { display: grid; gap: 16px; }
+.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.num { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.num b { display: block; font-size: 24px; font-weight: 800; color: var(--insp); letter-spacing: -0.01em; }
+.num span { font-size: 13px; color: #c9ccd4; }
+.arch { overflow-x: auto; }
+.arch pre { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; color: #c9ccd4; }
+.links { display: flex; flex-wrap: wrap; gap: 10px; }
+.links a { color: var(--fg); text-decoration: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+.links a:hover { border-color: var(--muted); }
+
+footer { font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="mono">Junction 2026 · Meta: AI Glasses for Everyone, Everyday · Google DeepMind: Best Use of Gemini API</span>
+    <h1>Handyman: your personal handyman on Meta glasses</h1>
+    <p class="punch">Hands-free, real-time guidance, mistakes caught before they happen. Step through one real repair (unclogging a sink with a bottle trap) and see what the wearer experiences next to what the system is doing.</p>
+    <div class="chips" aria-label="Technology colour code">
+      <span class="chip"><span class="dot" style="background:var(--live)"></span>GEMINI LIVE · the voice</span>
+      <span class="chip"><span class="dot" style="background:var(--insp)"></span>GEMINI DECISIONS API · the inspector</span>
+      <span class="chip"><span class="dot" style="background:var(--meta)"></span>META DEVICE ACCESS TOOLKIT · glasses camera + display</span>
+    </div>
+    <p class="note">A walkthrough of the system we built and tested, not a live connection. The procedure, its checks and warnings, the coach's lines and the glasses cards are the real ones from our code; confidence values are representative of our logged test runs. The recorded demo shows it running on Ray-Ban Display glasses.</p>
+  </header>
+
+  <nav class="stepper" id="stepper" aria-label="Walkthrough stages"></nav>
+
+  <main class="panes" id="stage" aria-live="polite">
+    <section class="pane" aria-label="On the glasses">
+      <div class="pane-head"><h2>On the glasses</h2><span class="mono" id="phase"></span></div>
+      <div class="view" id="view">
+        <div class="camera">
+          <span class="mono rec"><span class="dot"></span>Glasses camera</span>
+          <p class="scene" id="scene"></p>
+        </div>
+        <div class="display" aria-label="What the glasses display shows">
+          <span class="step" id="d-step"></span>
+          <img id="d-img" alt="" width="150" height="150">
+          <div class="noimg" id="d-noimg" hidden>text-only step</div>
+          <div class="short" id="d-short"></div>
+          <div class="tip" id="d-tip"></div>
+          <div class="status" id="d-status"></div>
+        </div>
+      </div>
+      <div class="talk" id="talk"></div>
+    </section>
+
+    <section class="pane" aria-label="Inside the brain">
+      <div class="pane-head"><h2>Inside the brain</h2><span class="mono" id="fps"></span></div>
+      <div class="lane live">
+        <div class="lane-title"><span class="dot" style="background:var(--live)"></span><span style="color:var(--live)">GEMINI LIVE</span><span class="what">the voice</span></div>
+        <p class="action" id="live"></p>
+      </div>
+      <div class="lane insp">
+        <div class="lane-title"><span class="dot" style="background:var(--insp)"></span><span style="color:var(--insp)">GEMINI DECISIONS API</span><span class="what" id="insp-what"></span></div>
+        <div class="tree" id="tree" hidden></div>
+        <div class="qs" id="qs"></div>
+        <p class="legend" id="legend">Line on each bar = 75% threshold. A step passes after 3 confident checks in a row.</p>
+      </div>
+      <div class="event" id="event" hidden></div>
+      <div class="why">
+        <span class="mono">Why it works this way</span>
+        <p id="why"></p>
+        <div class="meta-row" id="metarow"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="pane summary" id="summary" hidden aria-label="Summary"></section>
+
+  <div class="nav">
+    <div class="btns">
+      <button type="button" id="prev">← Back</button>
+      <button type="button" id="next" class="primary">Next →</button>
+      <button type="button" id="play" aria-pressed="false">Play</button>
+    </div>
+    <span class="progress" id="progress"></span>
+  </div>
+
+  <footer>Arrow keys also move between stages. Built at Junction 2026 · code: github.com/codegeekluka/junction2026</footer>
+</div>
+
+<script>
+const C = (n) => `cards/${n}.svg`;
+// Each stage mirrors what the real system does at that moment (server/src/tasks.js bottle_trap,
+// diagnosis.js, orchestrator.js). p = confidence; state: pass (≥ threshold), fail (a mistake firing),
+// warn (unsure band), idle (not yet).
+const STAGES = [
+  { tab: "Start", phase: "Session starts", scene: "Looking at a bathroom basin full of standing water. The wearer pressed Start in the app.",
+    card: "02-listening", short: "Listening", status: "Camera + mic on", statusTone: "insp",
+    talk: [["you", "Hey, my sink is draining really slowly. Can you take a look?"]],
+    live: "Hears the request and calls its <b>diagnose(\"sink\")</b> tool instead of guessing.",
+    inspWhat: "idle until a diagnosis or procedure starts",
+    qs: [],
+    fps: "0.5 fps idle",
+    why: "Nothing is streamed before the wearer presses Start, and no video is stored. Gemini Live is the conversation; it is told not to guess about problems it hasn't checked, so it hands the looking to the inspector.",
+    meta: [["Consent", "press Start"], ["Video stored", "none"]] },
+
+  { tab: "Diagnosis", phase: "Diagnosis", scene: "Basin with standing water; under the sink, a cylinder-shaped trap with a screw-off bottom cup.",
+    card: "09-confirm", short: "Clogged sink?", status: "Found it", statusTone: "insp",
+    talk: [["coach", "Looks like a slow drain, and you've got a bottle trap. Want to fix it together?"], ["you", "Yes, let's do it."]],
+    live: "Receives the verified diagnosis as an <b>[INSPECTOR]</b> note, says it in one sentence, and starts the expert procedure with <b>start_task(\"bottle_trap\")</b> when the wearer agrees.",
+    inspWhat: "the whole decision tree in one call per frame",
+    tree: [["Problem", "Slow drain · 94%"], ["Trap type", "Bottle trap · 91%"], ["Procedure", "Bottle trap · 7 steps"]],
+    qs: [["Standing water in the basin?", 0.93, "pass"], ["Water leaking under the sink?", 0.08, "idle"], ["Hazard (spraying water, wet electrics)?", 0.03, "idle"], ["Too dark or blurry?", 0.06, "idle"]],
+    event: ["insp", "Diagnosed in ~1.3 s · confident twice in a row"],
+    fps: "2 fps while diagnosing",
+    why: "Advice from the Google DeepMind team: one problem at a time, as a decision tree. All questions (problem, trap type, a confirming check, hazards) go in a single Decisions API call, which costs about the same as one question. The trap type picks the procedure: Finnish bathroom basins usually have bottle traps.",
+    meta: [["Questions per call", "up to 16"], ["Per check", "~0.3 s"]] },
+
+  { tab: "Step 1", phase: "Step 1/7", scene: "The wearer lifts the pop-up stopper out of the drain; hair is wrapped around it.",
+    card: "11-step-1-stopper", step: "Step 1/7", short: "Pull the stopper out", tip: "Used drain cleaner today? Stop.", status: "✓ Done", statusTone: "insp",
+    talk: [["coach", "First: have you poured any drain cleaner in today? If not, lift the stopper out and pull off any hair."], ["you", "No drain cleaner."]],
+    live: "Asks the safety question that a camera can't answer (chemicals), then gives the step in its own words.",
+    inspWhat: "verifying step 1",
+    qs: [["Sink area in view?", 0.95, "pass"], ["Stopper lifted out of the drain?", 0.88, "pass"]],
+    event: ["insp", "✓ Verified on camera ~1.2 s after it happened"],
+    fps: "2 fps during the procedure",
+    why: "Opening a trap after using drain cleaner can cause chemical burns, so the very first instruction is a hard safety question. The step itself only counts when the camera confirms it: the voice can never mark a step done.",
+    meta: [["Pass rule", "≥ 75%, 3× in a row"]] },
+
+  { tab: "The catch", phase: "Step 2/7 · safety step", scene: "The wearer opens the cabinet and reaches for the trap's bottom cup. There is no bucket underneath.",
+    card: "22-careful", step: "Step 2/7", short: "Bucket first", status: "⚠ Stop", statusTone: "danger", flash: true,
+    talk: [["coach urgent", "Wait! Don't open it yet. Bucket first, the water in there will spill everywhere."], ["you", "Oh, right."]],
+    live: "Gets an <b>URGENT</b> note and interrupts itself mid-sentence to say the warning immediately.",
+    inspWhat: "watching for known beginner mistakes",
+    qs: [["Hand touching the trap?", 0.88, "fail"], ["Bucket directly under the trap?", 0.06, "idle"]],
+    event: ["danger", "Mistake caught before it happened · 2 checks · ~1 s"],
+    fps: "2 fps (risky step)",
+    why: "Each step carries the mistakes beginners actually make, taken from manufacturer instructions. Reaching for the trap before the bucket is in place is caught on camera, and the coach stops you before any water spills. This is the Decisions API working in real time.",
+    meta: [["Source", "Hansgrohe trap instructions"], ["Safety step", "can't be skipped"]] },
+
+  { tab: "Step 2", phase: "Step 2/7 · safety step", scene: "Gloves on. A bucket is now directly under the trap.",
+    card: "17-correct", step: "Step 2/7", short: "Bucket under the trap", tip: "Gloves on", status: "✓ Done", statusTone: "insp",
+    talk: [["coach", "Good, the bucket's in place. Now hold the trap body still and turn the bottom cup to the left, by hand."]],
+    live: "Confirms in one sentence and gives the next step. Non-urgent notes wait until it finishes speaking, so it never talks over itself.",
+    inspWhat: "verifying the safety step",
+    qs: [["Bucket directly under the trap?", 0.92, "pass"], ["Hand touching the trap?", 0.41, "idle"]],
+    event: ["insp", "✓ Safety step verified"],
+    fps: "2 fps",
+    why: "A safety step must be seen to be done; the coach can't skip it even if asked. A step also can't pass while a mistake signal is above 50%, so a half-done move doesn't slip through.",
+    meta: [["Blocks passing", "mistake signal ≥ 50%"]] },
+
+  { tab: "Step 3", phase: "Step 3/7", scene: "One hand holds the trap body; the other unscrews the bottom cup. Dirty water drops into the bucket.",
+    card: null, step: "Step 3/7", short: "Hold the trap, unscrew the cup", tip: "Turn the cup left, by hand", status: "👁 Watching…", statusTone: "live",
+    talk: [["you", "Why do I hold the top part?"], ["coach", "So the joints higher up don't twist loose and start a new leak."]],
+    live: "Answers \"why?\" from the sourced knowledge pack in its context (21 sources), not from guesswork.",
+    inspWhat: "verifying step 3 and watching for mistakes",
+    qs: [["Bottom cup removed (gap under the trap)?", 0.9, "pass"], ["Water spilling outside the bucket?", 0.04, "idle"], ["Pliers on the plastic?", 0.02, "idle"], ["Cracked or corroded parts?", 0.03, "idle"]],
+    event: ["insp", "✓ Verified · no mistakes firing"],
+    fps: "2 fps",
+    why: "The whole knowledge pack (Hansgrohe and Prevex instructions, Finnish housing guidance) fits in Gemini Live's context, so no retrieval step can miss something. Cracked or corroded parts would trigger a hard stop and a pointer to a plumber or the housing company.",
+    meta: [["Knowledge", "21 cited sources"]] },
+
+  { tab: "Step 4", phase: "Step 4/7", scene: "The wearer scrubs the cup with an old toothbrush and rinses it.",
+    card: "14-step-4-rinse", step: "Step 4/7", short: "Empty and clean the cup", tip: "Old toothbrush. No scourer.", status: "✓ Done", statusTone: "insp",
+    talk: [["you", "Done."], ["coach", "Checking… yes, that's clean."]],
+    live: "Hears \"done\" and calls <b>verify_now</b>: the app sends 3 frames at once for a close check.",
+    inspWhat: "burst of 3 checks after \"done\"",
+    qs: [["Cup rinsed or clean inside?", 0.86, "pass"]],
+    event: ["live", "verify_now → 3-frame burst"],
+    fps: "burst",
+    why: "Google DeepMind's advice was to verify at the moments that matter rather than stream constantly. Saying \"done\" triggers an immediate close check, and Gemini Live only gets a frame every ~4 s plus one when you start talking.",
+    meta: [["Frames to Live", "60 → ~6–9 / min"]] },
+
+  { tab: "Not sure", phase: "Step 5/7", scene: "The wearer holds the cup at an angle; the rubber ring is hard to see.",
+    card: "05-look-down", step: "Step 5/7", short: "Rubber ring flat in the groove", tip: "Cracked or flat? Replace it.", status: "? Show me another angle", statusTone: "warn",
+    talk: [["coach", "I can't quite see the ring. Can you hold the cup closer, with the inside facing you?"]],
+    live: "Takes over when the inspector is unsure: looks at the image itself and asks one short question. It may not mark the step done.",
+    inspWhat: "stuck between 25% and 75% for 8 checks",
+    qs: [["Rubber ring seated flat in the groove?", 0.55, "warn"], ["Ring missing or twisted?", 0.31, "idle"]],
+    event: ["warn", "Not sure (55%) → handing over to Gemini Live"],
+    fps: "2 fps",
+    why: "Fast, calibrated checks decide when they can; when they can't, they say so and hand over to the model that can reason, instead of guessing. The wearer stays in control and is told what to show.",
+    meta: [["Escalation", "after 8 unsure checks"]] },
+
+  { tab: "Step 5", phase: "Step 5/7", scene: "Cup held close to the eyes; the rubber ring sits flat all the way round.",
+    card: "17-correct", step: "Step 5/7", short: "Rubber ring flat in the groove", status: "✓ Done", statusTone: "insp",
+    talk: [["coach", "That ring looks good. Screw the cup back on by hand. Start it straight."]],
+    live: "Gets the verified result and moves on.",
+    inspWhat: "verifying step 5",
+    qs: [["Rubber ring seated flat in the groove?", 0.91, "pass"], ["Ring missing or twisted?", 0.05, "idle"]],
+    event: ["insp", "✓ Verified after the better view"],
+    fps: "2 fps",
+    why: "A twisted or missing ring is the most common reason a re-fitted trap leaks, so the inspector checks it explicitly before the cup goes back on.",
+    meta: [] },
+
+  { tab: "Connection drop", phase: "Step 6/7", scene: "Mid-step, the Wi-Fi drops for a few seconds.",
+    card: "27-offline", step: "Step 6/7", short: "Your place is saved", status: "Reconnecting…", statusTone: "warn",
+    talk: [["coach", "Sorry, I lost connection for a moment. I'm back. Let's carry on: screw the cup back on, hand-tight."]],
+    live: "Resumes the same conversation with a session-resumption handle, then says it's back.",
+    inspWhat: "paused while offline, then continues",
+    qs: [],
+    event: ["live", "Connection lost → resumed in ~4 s · still on step 6/7"],
+    fps: "resumes",
+    why: "On the glasses you can't see a screen, so connection changes are audible: a falling tone when lost, a rising tone when back, and the coach tells you. The procedure state lives on our server, so nothing is lost.",
+    meta: [["Handles", "drops, 10-min limit, 2-min video limit"]] },
+
+  { tab: "Step 6", phase: "Step 6/7", scene: "The cup is screwed back on, sitting straight and level.",
+    card: null, step: "Step 6/7", short: "Screw the cup on, by hand", tip: "Start it straight. Hand-tight.", status: "✓ Done", statusTone: "insp",
+    talk: [["coach", "Nice and straight. Now run the tap for a few seconds while I watch for drips."]],
+    live: "Gives the last step.",
+    inspWhat: "verifying step 6",
+    qs: [["Cup back on, straight and level?", 0.89, "pass"], ["Cup tilted?", 0.06, "idle"], ["Pliers on the plastic?", 0.02, "idle"]],
+    event: ["insp", "✓ Verified"],
+    fps: "2 fps",
+    why: "A crooked cup is a cross-threaded cup, and it will leak. Overtightening plastic cracks it. Both are watched as mistakes on this step.",
+    meta: [] },
+
+  { tab: "Done", phase: "Step 7/7", scene: "Tap running; water drains away freely. The cup stays dry.",
+    card: "23-drain-clear", step: "", short: "Drain clear", status: "✓ All done", statusTone: "insp",
+    talk: [["coach", "Water's draining and no drips. You fixed it!"]],
+    live: "Congratulates in one sentence.",
+    inspWhat: "final check",
+    qs: [["Water running and draining?", 0.9, "pass"], ["Drip at the trap?", 0.05, "idle"], ["Water still standing in the basin?", 0.04, "idle"]],
+    event: ["insp", "✓ Procedure complete"],
+    fps: "0.5 fps idle",
+    why: "If the water still didn't drain, the blockage would be further down the pipe: the coach would say to stop and call the housing company or a plumber, and not to push anything into the pipe.",
+    meta: [["Hard stop", "still blocked → call a pro"]] },
+
+  { tab: "How it fits together", summary: true },
+];
+
+const $ = (id) => document.getElementById(id);
+let i = 0, timer = null;
+
+function renderStepper() {
+  $("stepper").replaceChildren(...STAGES.map((s, k) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = s.tab;
+    if (k === i) b.setAttribute("aria-current", "step");
+    b.onclick = () => go(k);
+    return b;
+  }));
+  $("stepper").querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function bubble(kind, text) {
+  const d = document.createElement("div");
+  const cls = kind.split(" ");
+  d.className = "bubble " + kind;
+  const who = document.createElement("span");
+  who.className = "who"; who.textContent = cls[0] === "you" ? "YOU" : "COACH · GEMINI LIVE";
+  d.append(who, text);
+  return d;
+}
+
+function render() {
+  const s = STAGES[i];
+  $("stage").hidden = !!s.summary;
+  $("summary").hidden = !s.summary;
+  if (s.summary) renderSummary();
+  else {
+    $("phase").textContent = s.phase;
+    $("scene").textContent = s.scene;
+    $("d-step").textContent = s.step || "";
+    const img = $("d-img");
+    if (s.card) { img.src = C(s.card); img.hidden = false; $("d-noimg").hidden = true; }
+    else { img.hidden = true; $("d-noimg").hidden = false; }
+    $("d-short").textContent = s.short || "";
+    $("d-tip").textContent = s.tip || "";
+    const st = $("d-status");
+    st.textContent = s.status || "";
+    st.style.color = `var(--${{ insp: "insp", danger: "danger", warn: "warn", live: "live" }[s.statusTone] || "fg"})`;
+    $("view").querySelector(".flash")?.remove();
+    if (s.flash) { const f = document.createElement("div"); f.className = "flash"; $("view").append(f); }
+    $("talk").replaceChildren(...s.talk.map(([k, t]) => bubble(k, t)));
+    $("live").innerHTML = s.live;
+    $("insp-what").textContent = s.inspWhat;
+    const tree = $("tree");
+    tree.hidden = !s.tree;
+    if (s.tree) {
+      tree.replaceChildren(...s.tree.flatMap(([k, v], n) => {
+        const node = document.createElement("div"); node.className = "node";
+        const sm = document.createElement("small"); sm.textContent = k.toUpperCase();
+        node.append(sm, v);
+        if (n === 0) return [node];
+        const a = document.createElement("span"); a.className = "arrow"; a.textContent = "→";
+        return [a, node];
+      }));
+    }
+    $("qs").replaceChildren(...s.qs.map(([label, p, state]) => {
+      const q = document.createElement("div"); q.className = "q " + state;
+      const l = document.createElement("span"); l.className = "label"; l.textContent = label;
+      const v = document.createElement("span"); v.className = "val"; v.textContent = Math.round(p * 100) + "%";
+      const bar = document.createElement("div"); bar.className = "bar";
+      const fill = document.createElement("i"); fill.style.width = "0%"; bar.append(fill);
+      requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = p * 100 + "%")));
+      q.append(l, v, bar);
+      return q;
+    }));
+    $("legend").hidden = !s.qs.length;
+    const ev = $("event");
+    ev.hidden = !s.event;
+    if (s.event) { ev.className = "event " + s.event[0]; ev.textContent = s.event[1]; }
+    $("fps").textContent = "Camera · " + s.fps;
+    $("why").textContent = s.why;
+    $("metarow").replaceChildren(...(s.meta || []).map(([k, v]) => {
+      const sp = document.createElement("span"); sp.append(k + ": ");
+      const b = document.createElement("b"); b.textContent = v; sp.append(b);
+      return sp;
+    }));
+  }
+  $("prev").disabled = i === 0;
+  $("next").disabled = i === STAGES.length - 1;
+  $("progress").textContent = `${i + 1} / ${STAGES.length}`;
+  renderStepper();
+}
+
+function renderSummary() {
+  $("summary").innerHTML = `
+    <div class="pane-head"><h2>How it fits together</h2><span class="mono">what we built</span></div>
+    <div class="arch"><pre>Meta glasses ──Bluetooth──▶ Android app ──WebSocket──▶ Server (the brain) ──▶ Gemini Live           = the voice
+ camera, display,            Meta Device Access          procedures, step runner,  └▶ Gemini Decisions API  = the inspector
+ speakers                    Toolkit (Kotlin)            diagnosis tree, cards</pre></div>
+    <p style="max-width:75ch;color:#d4d6dc">Two Gemini models, one job each. Gemini Live talks, listens and reasons; the Decisions API checks every step on camera with a calibrated confidence. A step counts only when the inspector confirms it, and when it isn't sure it hands over to Gemini Live. The expertise is stored as data: every step has a done check, mistake checks and safety gates, built from cited manufacturer instructions.</p>
+    <div class="numbers">
+      <div class="num"><b>0.3 s</b><span>per camera check</span></div>
+      <div class="num"><b>~1.5 s</b><span>from doing a step to ✓ verified</span></div>
+      <div class="num"><b>16</b><span>questions in one call</span></div>
+      <div class="num"><b>89% → 100%</b><span>accuracy after tuning (19 labelled frames)</span></div>
+      <div class="num"><b>60 → 6</b><span>frames/min sent to the expensive model</span></div>
+      <div class="num"><b>21</b><span>sources behind the steps</span></div>
+      <div class="num"><b>€0.40</b><span>per hour of camera checks</span></div>
+    </div>
+    <p style="max-width:75ch;color:#d4d6dc">On the real glasses we learned that their microphone forces Bluetooth call mode, which hides the display, so the wearer's voice goes through the phone mic while the coach plays through the glasses. Procedures are AI-drafted from sources and still need expert review; handling glasses events (taken off, battery) is next.</p>
+    <div class="links">
+      <a href="https://github.com/codegeekluka/junction2026" target="_blank" rel="noopener">Source code on GitHub →</a>
+    </div>`;
+}
+
+function go(k) { i = Math.max(0, Math.min(STAGES.length - 1, k)); render(); }
+$("prev").onclick = () => { stop(); go(i - 1); };
+$("next").onclick = () => { stop(); go(i + 1); };
+function stop() { clearInterval(timer); timer = null; $("play").textContent = "Play"; $("play").setAttribute("aria-pressed", "false"); }
+$("play").onclick = () => {
+  if (timer) return stop();
+  $("play").textContent = "Pause"; $("play").setAttribute("aria-pressed", "true");
+  timer = setInterval(() => { if (i >= STAGES.length - 1) return stop(); go(i + 1); }, 6500);
+};
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") { stop(); go(i + 1); }
+  if (e.key === "ArrowLeft") { stop(); go(i - 1); }
+});
+render();
+</script>
